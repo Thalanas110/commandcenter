@@ -11,7 +11,7 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from "@dnd-kit/core";
-import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableContext, horizontalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks } from "@/hooks/useTasks";
 import { useRealtimeBoard } from "@/hooks/useRealtime";
@@ -31,15 +31,19 @@ export default function BoardViewPage() {
   const { tasks, isLoading: taskLoading, createTask, updateTask, deleteTask, moveTask } = useTasks(boardId);
   useRealtimeBoard(boardId);
 
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
-  const activeTask = tasks.find((t) => t.id === activeTaskId);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeType, setActiveType] = useState<"column" | "task" | null>(null);
+  const activeTask = activeType === "task" ? tasks.find((t) => t.id === activeId) : undefined;
+  const activeColumn = activeType === "column" ? columns.find((c) => c.id === activeId) : undefined;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveTaskId(event.active.id as string);
+    const type = event.active.data.current?.type === "column" ? "column" : "task";
+    setActiveId(event.active.id as string);
+    setActiveType(type);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -47,10 +51,25 @@ export default function BoardViewPage() {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setActiveTaskId(null);
     const { active, over } = event;
+    setActiveId(null);
+    setActiveType(null);
     if (!over) return;
 
+    // --- Column reordering ---
+    if (activeType === "column") {
+      if (active.id !== over.id) {
+        const oldIndex = columns.findIndex((c) => c.id === active.id);
+        const newIndex = columns.findIndex((c) => c.id === over.id);
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newOrder = arrayMove(columns, oldIndex, newIndex).map((c) => c.id);
+          reorderColumns.mutate(newOrder);
+        }
+      }
+      return;
+    }
+
+    // --- Task reordering / moving ---
     const taskId = active.id as string;
     const overId = over.id as string;
 
@@ -140,6 +159,11 @@ export default function BoardViewPage() {
             </SortableContext>
             <DragOverlay>
               {activeTask ? <TaskCard task={activeTask} isDragging /> : null}
+              {activeColumn ? (
+                <div className="flex h-32 w-72 items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary/5">
+                  <span className="font-semibold text-primary/60">{activeColumn.name}</span>
+                </div>
+              ) : null}
             </DragOverlay>
           </DndContext>
         )}

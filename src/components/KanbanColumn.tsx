@@ -1,5 +1,6 @@
 import { useRef } from "react";
-import { useDroppable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { TaskCard } from "@/components/TaskCard";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,21 @@ export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, 
   const [newTitle, setNewTitle] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+    isOver,
+  } = useSortable({ id: column.id, data: { type: "column" } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
 
   const handleRename = () => {
     if (editName.trim() && editName !== column.name) {
@@ -67,6 +82,7 @@ export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, 
   return (
     <div
       ref={setNodeRef}
+      style={style}
       className={`flex w-72 shrink-0 flex-col rounded-lg bg-kanban-column transition-colors ${isOver ? "ring-2 ring-primary/50" : ""
         }`}
     >
@@ -92,7 +108,7 @@ export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, 
       />
 
       <div className="p-3">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between" {...attributes} {...listeners}>
           {isEditing ? (
             <Input
               value={editName}
