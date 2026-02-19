@@ -48,8 +48,11 @@ export function useBoards() {
   });
 
   const updateBoard = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await supabase.from("boards").update({ name }).eq("id", id);
+    mutationFn: async (
+      updates: { id: string } & Partial<{ name: string; background_image_url: string | null }>
+    ) => {
+      const { id, ...fields } = updates;
+      const { error } = await supabase.from("boards").update(fields).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -67,11 +70,57 @@ export function useBoards() {
     },
   });
 
+  const uploadBoardBackground = useMutation({
+    mutationFn: async ({ boardId, file }: { boardId: string; file: File }) => {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const filePath = `${boardId}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("board-backgrounds")
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("board-backgrounds")
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from("boards")
+        .update({ background_image_url: urlData.publicUrl })
+        .eq("id", boardId);
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+
+  const removeBoardBackground = useMutation({
+    mutationFn: async ({ boardId, currentUrl }: { boardId: string; currentUrl: string }) => {
+      const parts = currentUrl.split("/board-backgrounds/");
+      if (parts.length > 1) {
+        const storagePath = decodeURIComponent(parts[1]);
+        await supabase.storage.from("board-backgrounds").remove([storagePath]);
+      }
+
+      const { error } = await supabase
+        .from("boards")
+        .update({ background_image_url: null })
+        .eq("id", boardId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["boards"] });
+    },
+  });
+
   return {
     boards: boardsQuery.data ?? [],
     isLoading: boardsQuery.isLoading,
     createBoard,
     updateBoard,
     deleteBoard,
+    uploadBoardBackground,
+    removeBoardBackground,
   };
 }

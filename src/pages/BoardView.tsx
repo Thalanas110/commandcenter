@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   DndContext,
@@ -20,12 +20,14 @@ import { KanbanColumn } from "@/components/KanbanColumn";
 import { TaskCard } from "@/components/TaskCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, ArrowLeft } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, ArrowLeft, ImagePlus, ImageOff, Wallpaper } from "lucide-react";
 import { useBoards } from "@/hooks/useBoards";
+import { useState } from "react";
 
 export default function BoardViewPage() {
   const { id: boardId } = useParams<{ id: string }>();
-  const { boards } = useBoards();
+  const { boards, uploadBoardBackground, removeBoardBackground } = useBoards();
   const board = boards.find((b) => b.id === boardId);
   const { columns, isLoading: colLoading, createColumn, updateColumn, deleteColumn, reorderColumns, uploadColumnCover, removeColumnCover } = useColumns(boardId);
   const { tasks, isLoading: taskLoading, createTask, updateTask, deleteTask, moveTask } = useTasks(boardId);
@@ -35,6 +37,7 @@ export default function BoardViewPage() {
   const [activeType, setActiveType] = useState<"column" | "task" | null>(null);
   const activeTask = activeType === "task" ? tasks.find((t) => t.id === activeId) : undefined;
   const activeColumn = activeType === "column" ? columns.find((c) => c.id === activeId) : undefined;
+  const bgFileInputRef = useRef<HTMLInputElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -46,7 +49,7 @@ export default function BoardViewPage() {
     setActiveType(type);
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = (_event: DragOverEvent) => {
     // Handle cross-column dragging via optimistic UI if needed
   };
 
@@ -96,78 +99,144 @@ export default function BoardViewPage() {
     }
   };
 
+  const handleBgFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && boardId) {
+      uploadBoardBackground.mutate({ boardId, file });
+    }
+    e.target.value = "";
+  };
+
+  const backgroundUrl = board?.background_image_url;
+
+  const boardAreaStyle = useMemo(
+    () =>
+      backgroundUrl
+        ? {
+          backgroundImage: `url(${backgroundUrl})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat" as const,
+        }
+        : undefined,
+    [backgroundUrl]
+  );
+
   const isLoading = colLoading || taskLoading;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
-      <div className="border-b bg-card px-4 py-3">
+      <div className={`border-b px-4 py-3 ${backgroundUrl ? "bg-card/80 backdrop-blur-sm" : "bg-card"}`}>
         <div className="container flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <h1 className="text-xl font-bold">{board?.name ?? "Board"}</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            onClick={() => boardId && createColumn.mutate({ name: "New Column", boardId })}
-          >
-            <Plus className="mr-1 h-4 w-4" /> Add Column
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {/* Background image controls */}
+            <input
+              ref={bgFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleBgFileChange}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Wallpaper className="mr-1 h-4 w-4" /> Background
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => bgFileInputRef.current?.click()}>
+                  <ImagePlus className="mr-2 h-3.5 w-3.5" /> Set Background
+                </DropdownMenuItem>
+                {backgroundUrl && (
+                  <DropdownMenuItem
+                    onClick={() =>
+                      boardId &&
+                      removeBoardBackground.mutate({ boardId, currentUrl: backgroundUrl })
+                    }
+                  >
+                    <ImageOff className="mr-2 h-3.5 w-3.5" /> Remove Background
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => boardId && createColumn.mutate({ name: "New Column", boardId })}
+            >
+              <Plus className="mr-1 h-4 w-4" /> Add Column
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-x-auto p-4">
-        {isLoading ? (
-          <div className="flex gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-96 w-72 shrink-0 rounded-lg" />
-            ))}
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={columns.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
-              <div className="flex gap-4">
-                {columns.map((column) => (
-                  <KanbanColumn
-                    key={column.id}
-                    column={column}
-                    tasks={tasks.filter((t) => t.column_id === column.id)}
-                    onRename={(name) => updateColumn.mutate({ id: column.id, name })}
-                    onDelete={() => deleteColumn.mutate(column.id)}
-                    onCreateTask={(title) =>
-                      createTask.mutate({
-                        title,
-                        priority: "medium",
-                        column_id: column.id,
-                      })
-                    }
-                    onUpdateTask={(id, updates) => updateTask.mutate({ id, ...updates })}
-                    onDeleteTask={(id) => deleteTask.mutate(id)}
-                    onUploadCover={(file) => uploadColumnCover.mutate({ columnId: column.id, file })}
-                    onRemoveCover={() => column.cover_image_url && removeColumnCover.mutate({ columnId: column.id, currentUrl: column.cover_image_url })}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-            <DragOverlay>
-              {activeTask ? <TaskCard task={activeTask} isDragging /> : null}
-              {activeColumn ? (
-                <div className="flex h-32 w-72 items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary/5">
-                  <span className="font-semibold text-primary/60">{activeColumn.name}</span>
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+      <div
+        className="relative flex-1 overflow-x-auto p-4"
+        style={boardAreaStyle}
+      >
+        {/* Dark overlay for readability when background image is set */}
+        {backgroundUrl && (
+          <div className="pointer-events-none absolute inset-0 bg-black/20" />
         )}
+
+        <div className="relative">
+          {isLoading ? (
+            <div className="flex gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-96 w-72 shrink-0 rounded-lg" />
+              ))}
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={columns.map((c) => c.id)} strategy={horizontalListSortingStrategy}>
+                <div className="flex gap-4">
+                  {columns.map((column) => (
+                    <KanbanColumn
+                      key={column.id}
+                      column={column}
+                      tasks={tasks.filter((t) => t.column_id === column.id)}
+                      onRename={(name) => updateColumn.mutate({ id: column.id, name })}
+                      onDelete={() => deleteColumn.mutate(column.id)}
+                      onCreateTask={(title) =>
+                        createTask.mutate({
+                          title,
+                          priority: "medium",
+                          column_id: column.id,
+                        })
+                      }
+                      onUpdateTask={(id, updates) => updateTask.mutate({ id, ...updates })}
+                      onDeleteTask={(id) => deleteTask.mutate(id)}
+                      onUploadCover={(file) => uploadColumnCover.mutate({ columnId: column.id, file })}
+                      onRemoveCover={() => column.cover_image_url && removeColumnCover.mutate({ columnId: column.id, currentUrl: column.cover_image_url })}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+              <DragOverlay>
+                {activeTask ? <TaskCard task={activeTask} isDragging /> : null}
+                {activeColumn ? (
+                  <div className="flex h-32 w-72 items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary/5">
+                    <span className="font-semibold text-primary/60">{activeColumn.name}</span>
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+

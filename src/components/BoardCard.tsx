@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2, ArrowRight } from "lucide-react";
 
 interface BoardCardProps {
-  board: { id: string; name: string; created_at: string };
+  board: { id: string; name: string; created_at: string; background_image_url?: string | null };
   onDelete: () => void;
   onRename: (name: string) => void;
 }
@@ -24,7 +24,17 @@ export function BoardCard({ board, onDelete, onRename }: BoardCardProps) {
   };
 
   return (
-    <Card className="group transition-shadow hover:shadow-md">
+    <Card className="group overflow-hidden transition-shadow hover:shadow-md">
+      {/* Background image thumbnail */}
+      {board.background_image_url && (
+        <div className="h-24 w-full overflow-hidden">
+          <img
+            src={board.background_image_url}
+            alt={`${board.name} background`}
+            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+          />
+        </div>
+      )}
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between">
           {isEditing ? (
@@ -69,3 +79,4 @@ export function BoardCard({ board, onDelete, onRename }: BoardCardProps) {
     </Card>
   );
 }
+
