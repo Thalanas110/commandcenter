@@ -5,12 +5,13 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { TaskCard } from "@/components/TaskCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, Pencil, Trash2, ImagePlus, ImageOff } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, MoreHorizontal, Pencil, Trash2, ImagePlus, ImageOff, FolderInput } from "lucide-react";
+import type { Category } from "@/hooks/useCategories";
 import { useState } from "react";
 
 interface KanbanColumnProps {
-  column: { id: string; name: string; order_index: number; cover_image_url?: string | null };
+  column: { id: string; name: string; order_index: number; cover_image_url?: string | null; category_id?: string | null };
   tasks: Array<{
     id: string;
     title: string;
@@ -28,9 +29,11 @@ interface KanbanColumnProps {
   onDeleteTask: (id: string) => void;
   onUploadCover?: (file: File) => void;
   onRemoveCover?: () => void;
+  categories?: Category[];
+  onChangeCategory?: (categoryId: string | null) => void;
 }
 
-export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, onUpdateTask, onDeleteTask, onUploadCover, onRemoveCover }: KanbanColumnProps) {
+export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, onUpdateTask, onDeleteTask, onUploadCover, onRemoveCover, categories, onChangeCategory }: KanbanColumnProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
   const [isAdding, setIsAdding] = useState(false);
@@ -141,6 +144,32 @@ export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, 
                 <DropdownMenuItem onClick={onRemoveCover}>
                   <ImageOff className="mr-2 h-3.5 w-3.5" /> Remove Cover
                 </DropdownMenuItem>
+              )}
+              {categories && categories.length > 0 && onChangeCategory && (
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <FolderInput className="mr-2 h-3.5 w-3.5" /> Move to Category
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {categories.map((cat) => (
+                      <DropdownMenuItem
+                        key={cat.id}
+                        onClick={() => onChangeCategory(cat.id)}
+                        className={column.category_id === cat.id ? "bg-accent" : ""}
+                      >
+                        <div
+                          className="mr-2 h-3 w-3 shrink-0 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        {cat.name}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onChangeCategory(null)}>
+                      None (Uncategorized)
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onDelete} className="text-destructive">

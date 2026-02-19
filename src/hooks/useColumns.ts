@@ -25,11 +25,13 @@ export function useColumns(boardId: string | undefined) {
   });
 
   const createColumn = useMutation({
-    mutationFn: async ({ name, boardId: bId }: { name: string; boardId: string }) => {
+    mutationFn: async ({ name, boardId: bId, categoryId }: { name: string; boardId: string; categoryId?: string | null }) => {
       const maxOrder = columnsQuery.data?.length ?? 0;
+      const insertData: Record<string, unknown> = { name, board_id: bId, order_index: maxOrder };
+      if (categoryId) insertData.category_id = categoryId;
       const { error } = await supabase
         .from("columns")
-        .insert({ name, board_id: bId, order_index: maxOrder });
+        .insert(insertData);
       if (error) throw error;
     },
     onSuccess: invalidate,
@@ -37,7 +39,7 @@ export function useColumns(boardId: string | undefined) {
 
   const updateColumn = useMutation({
     mutationFn: async (
-      updates: { id: string } & Partial<{ name: string; cover_image_url: string | null }>
+      updates: { id: string } & Partial<{ name: string; cover_image_url: string | null; category_id: string | null }>
     ) => {
       const { id, ...fields } = updates;
       const { error } = await supabase.from("columns").update(fields).eq("id", id);
