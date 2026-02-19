@@ -22,6 +22,7 @@ interface KanbanColumnProps {
     order_index: number;
     is_done?: boolean;
     task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
+    task_attachments?: { count: number }[];
   }>;
   onRename: (name: string) => void;
   onDelete: () => void;

@@ -39,7 +39,14 @@ export function useTasks(boardId: string | undefined) {
       const columnIds = columns.map((c) => c.id);
       const { data, error } = await supabase
         .from("tasks")
-        .select("*, task_labels(label_id, labels(*))")
+        .select(`
+          *,
+          task_labels (
+            label_id,
+            labels (*)
+          ),
+          task_attachments (count)
+        `)
         .in("column_id", columnIds)
         .order("order_index");
       if (error) throw error;

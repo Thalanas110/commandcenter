@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Trash2, Calendar, CheckSquare, CircleCheck, CircleDashed } from "lucide-react";
+import { MoreHorizontal, Trash2, Calendar, CheckSquare, CircleCheck, CircleDashed, Paperclip, AlignLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { useChecklists } from "@/hooks/useChecklists";
@@ -19,6 +19,7 @@ interface TaskCardProps {
     due_date: string | null;
     is_done?: boolean;
     task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
+    task_attachments?: { count: number }[];
   };
   isDragging?: boolean;
   onUpdate?: (updates: Record<string, unknown>) => void;
@@ -141,6 +142,12 @@ export function TaskCard({ task, isDragging, onUpdate, onDelete, onMarkDone, onM
                   {tl.labels!.name}
                 </Badge>
               ))}
+              {task.task_attachments && task.task_attachments[0]?.count > 0 && (
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  <Paperclip className="h-3 w-3" />
+                  {task.task_attachments[0].count}
+                </span>
+              )}
               {task.due_date && (
                 <span className={cn(
                   "flex items-center gap-0.5 text-[10px]",

@@ -8,8 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useChecklists } from "@/hooks/useChecklists";
-import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed } from "lucide-react";
+import { useTaskAttachments, TaskAttachment } from "@/hooks/useTaskAttachments";
+import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 const priorityConfig = {
     low: { label: "Low", className: "bg-priority-low/15 text-priority-low border-priority-low/30" },
@@ -41,8 +43,10 @@ export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete,
     const [isEditingDesc, setIsEditingDesc] = useState(false);
     const [newChecklistItem, setNewChecklistItem] = useState("");
     const [isAddingItem, setIsAddingItem] = useState(false);
+    const fileInputRef = useState<HTMLInputElement | null>(null);
 
     const { items: checklistItems, createItem, updateItem, deleteItem } = useChecklists(task.id);
+    const { attachments, uploadAttachment, deleteAttachment, isLoading: isLoadingAttachments } = useTaskAttachments(task.id);
 
     const completedCount = checklistItems.filter((i) => i.is_completed).length;
     const totalCount = checklistItems.length;
@@ -218,6 +222,91 @@ export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete,
                                 )}
                             </button>
                         )}
+                    </div>
+
+                    {/* Attachments */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <Paperclip className="h-4 w-4" />
+                                Attachments
+                            </div>
+                        </div>
+
+                        <div className="grid gap-2">
+                            {isLoadingAttachments && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="h-3 w-3 animate-spin" /> Loading attachments...
+                                </div>
+                            )}
+
+                            {attachments.map((file) => {
+                                const isImage = file.file_type.startsWith("image/");
+                                const publicUrl = supabase.storage.from("task-attachments").getPublicUrl(file.file_path).data.publicUrl;
+
+                                return (
+                                    <div key={file.id} className="group flex items-center justify-between rounded-md border p-2 hover:bg-muted/50 transition-colors">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            {isImage ? (
+                                                <div className="h-10 w-10 shrink-0 overflow-hidden rounded bg-muted">
+                                                    <img src={publicUrl} alt={file.file_name} className="h-full w-full object-cover" />
+                                                </div>
+                                            ) : (
+                                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-muted">
+                                                    <FileIcon className="h-5 w-5 text-muted-foreground" />
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col overflow-hidden">
+                                                <a href={publicUrl} target="_blank" rel="noopener noreferrer" className="truncate text-sm font-medium hover:underline">
+                                                    {file.file_name}
+                                                </a>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {(file.file_size / 1024).toFixed(1)} KB • {new Date(file.created_at).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <a href={publicUrl} download={file.file_name} target="_blank" rel="noopener noreferrer">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <Download className="h-4 w-4" />
+                                                </Button>
+                                            </a>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                                onClick={() => deleteAttachment.mutate(file)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="relative">
+                            <Input
+                                type="file"
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        uploadAttachment.mutate(file);
+                                        e.target.value = ""; // Reset value
+                                    }
+                                }}
+                                disabled={uploadAttachment.isPending}
+                            />
+                            <Button variant="outline" size="sm" className="w-full justify-start text-muted-foreground" disabled={uploadAttachment.isPending}>
+                                {uploadAttachment.isPending ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Plus className="mr-2 h-4 w-4" />
+                                )}
+                                {uploadAttachment.isPending ? "Uploading..." : "Add Attachment"}
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Checklist */}
