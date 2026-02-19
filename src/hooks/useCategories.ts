@@ -34,6 +34,8 @@ export function useCategories(boardId: string | undefined) {
         enabled: !!boardId && !!user,
     });
 
+    const DEFAULT_COLUMNS = ["To Do", "In Progress", "Review", "Done", "Blocked"] as const;
+
     const createCategory = useMutation({
         mutationFn: async ({ name, color }: { name: string; color?: string }) => {
             if (!boardId) throw new Error("No board");
@@ -44,10 +46,40 @@ export function useCategories(boardId: string | undefined) {
                 order_index: maxOrder,
             };
             if (color) insertData.color = color;
-            const { error } = await supabase.from("categories").insert(insertData);
+
+            // Create the category and get its ID back
+            const { data: newCategory, error } = await supabase
+                .from("categories")
+                .insert(insertData)
+                .select("id")
+                .single();
             if (error) throw error;
+
+            // Fetch existing column count so order_index continues correctly
+            const { count } = await supabase
+                .from("columns")
+                .select("*", { count: "exact", head: true })
+                .eq("board_id", boardId);
+
+            const startIndex = count ?? 0;
+
+            // Auto-create the 5 default columns linked to this category
+            const columnRows = DEFAULT_COLUMNS.map((colName, i) => ({
+                name: colName,
+                board_id: boardId,
+                order_index: startIndex + i,
+                category_id: newCategory.id,
+            }));
+
+            const { error: colError } = await supabase
+                .from("columns")
+                .insert(columnRows);
+            if (colError) throw colError;
         },
-        onSuccess: invalidate,
+        onSuccess: () => {
+            invalidate();
+            queryClient.invalidateQueries({ queryKey: ["columns", boardId] });
+        },
     });
 
     const updateCategory = useMutation({
