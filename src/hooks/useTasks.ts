@@ -2,6 +2,26 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+interface AssigneeProfile {
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+export interface TaskRecord {
+  id: string;
+  title: string;
+  description: string | null;
+  priority: "low" | "medium" | "high";
+  due_date: string | null;
+  column_id: string;
+  order_index: number;
+  is_done?: boolean;
+  assigned_to?: string | null;
+  assignee_profile?: AssigneeProfile | null;
+  task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
+  task_attachments?: { count: number }[];
+}
+
 interface MarkDoneInput {
   taskId: string;
   targetColumnId: string;
@@ -45,12 +65,16 @@ export function useTasks(boardId: string | undefined) {
             label_id,
             labels (*)
           ),
-          task_attachments (count)
+          task_attachments (count),
+          assignee_profile:profiles!tasks_assigned_to_fkey (
+            display_name,
+            avatar_url
+          )
         `)
         .in("column_id", columnIds)
         .order("order_index");
       if (error) throw error;
-      return data;
+      return data as unknown as TaskRecord[];
     },
     enabled: !!boardId && !!user,
   });

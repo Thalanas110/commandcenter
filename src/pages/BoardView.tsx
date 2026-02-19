@@ -411,6 +411,7 @@ export default function BoardViewPage() {
                             {group.columns.map((column) => (
                               <KanbanColumn
                                 key={column.id}
+                                boardId={boardId!}
                                 column={column}
                                 tasks={tasks.filter(
                                   (t) => t.column_id === column.id
@@ -492,7 +493,7 @@ export default function BoardViewPage() {
               </SortableContext>
               <DragOverlay>
                 {activeTask ? (
-                  <TaskCard task={activeTask} isDragging />
+                  <TaskCard boardId={boardId!} task={activeTask} isDragging />
                 ) : null}
                 {activeColumn ? (
                   <div className="flex h-32 w-72 items-center justify-center rounded-lg border-2 border-dashed border-primary/40 bg-primary/5">

@@ -7,9 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChecklists } from "@/hooks/useChecklists";
 import { useTaskAttachments, TaskAttachment } from "@/hooks/useTaskAttachments";
-import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2 } from "lucide-react";
+import { useBoardSharing } from "@/hooks/useBoardSharing";
+import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,6 +22,7 @@ const priorityConfig = {
 } as const;
 
 interface TaskDetailDialogProps {
+    boardId: string;
     task: {
         id: string;
         title: string;
@@ -27,6 +30,8 @@ interface TaskDetailDialogProps {
         priority: string;
         due_date: string | null;
         is_done?: boolean;
+        assigned_to?: string | null;
+        assignee_profile?: { display_name: string | null; avatar_url: string | null } | null;
     };
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -36,7 +41,7 @@ interface TaskDetailDialogProps {
     onMarkUndone?: () => void;
 }
 
-export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete, onMarkDone, onMarkUndone }: TaskDetailDialogProps) {
+export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, onDelete, onMarkDone, onMarkUndone }: TaskDetailDialogProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editTitle, setEditTitle] = useState(task.title);
     const [description, setDescription] = useState(task.description ?? "");
@@ -47,6 +52,7 @@ export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete,
 
     const { items: checklistItems, createItem, updateItem, deleteItem } = useChecklists(task.id);
     const { attachments, uploadAttachment, deleteAttachment, isLoading: isLoadingAttachments } = useTaskAttachments(task.id);
+    const { members } = useBoardSharing(boardId);
 
     const completedCount = checklistItems.filter((i) => i.is_completed).length;
     const totalCount = checklistItems.length;
@@ -189,6 +195,59 @@ export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete,
                                 </Badge>
                             )}
                         </div>
+                    </div>
+
+                    {/* Assignee */}
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground shrink-0">
+                            <UserRound className="h-4 w-4" />
+                            Assignee
+                        </div>
+                        <Select
+                            value={task.assigned_to ?? "unassigned"}
+                            onValueChange={(val) =>
+                                onUpdate({ assigned_to: val === "unassigned" ? null : val })
+                            }
+                        >
+                            <SelectTrigger className="h-8 flex-1">
+                                <SelectValue>
+                                    {task.assigned_to && task.assignee_profile ? (
+                                        <span className="flex items-center gap-2">
+                                            <Avatar className="h-5 w-5">
+                                                <AvatarImage src={task.assignee_profile.avatar_url ?? ""} />
+                                                <AvatarFallback className="text-[9px]">
+                                                    {task.assignee_profile.display_name?.slice(0, 2).toUpperCase() ?? "?"}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            {task.assignee_profile.display_name ?? "Member"}
+                                        </span>
+                                    ) : (
+                                        <span className="text-muted-foreground">Unassigned</span>
+                                    )}
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="unassigned">
+                                    <span className="flex items-center gap-2 text-muted-foreground">
+                                        <UserRound className="h-4 w-4" />
+                                        Unassigned
+                                    </span>
+                                </SelectItem>
+                                {members.map((m) => (
+                                    <SelectItem key={m.user_id} value={m.user_id}>
+                                        <span className="flex items-center gap-2">
+                                            <Avatar className="h-5 w-5">
+                                                <AvatarImage src={m.avatar_url ?? ""} />
+                                                <AvatarFallback className="text-[9px]">
+                                                    {m.display_name?.slice(0, 2).toUpperCase() ?? "?"}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            {m.display_name ?? "Unknown"}
+                                        </span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     {/* Description */}

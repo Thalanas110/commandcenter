@@ -11,6 +11,7 @@ import type { Category } from "@/hooks/useCategories";
 import { useState } from "react";
 
 interface KanbanColumnProps {
+  boardId: string;
   column: { id: string; name: string; order_index: number; cover_image_url?: string | null; category_id?: string | null };
   tasks: Array<{
     id: string;
@@ -21,6 +22,8 @@ interface KanbanColumnProps {
     column_id: string;
     order_index: number;
     is_done?: boolean;
+    assigned_to?: string | null;
+    assignee_profile?: { display_name: string | null; avatar_url: string | null } | null;
     task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
     task_attachments?: { count: number }[];
   }>;
@@ -37,7 +40,7 @@ interface KanbanColumnProps {
   onMarkUndone?: (taskId: string) => void;
 }
 
-export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, onUpdateTask, onDeleteTask, onUploadCover, onRemoveCover, categories, onChangeCategory, onMarkDone, onMarkUndone }: KanbanColumnProps) {
+export function KanbanColumn({ boardId, column, tasks, onRename, onDelete, onCreateTask, onUpdateTask, onDeleteTask, onUploadCover, onRemoveCover, categories, onChangeCategory, onMarkDone, onMarkUndone }: KanbanColumnProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
   const [isAdding, setIsAdding] = useState(false);
@@ -188,6 +191,7 @@ export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, 
             {sortedTasks.map((task) => (
               <TaskCard
                 key={task.id}
+                boardId={boardId}
                 task={task}
                 onUpdate={(updates) => onUpdateTask(task.id, updates)}
                 onDelete={() => onDeleteTask(task.id)}

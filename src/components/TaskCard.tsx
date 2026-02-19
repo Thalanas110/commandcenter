@@ -5,12 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Trash2, Calendar, CheckSquare, CircleCheck, CircleDashed, Paperclip, AlignLeft } from "lucide-react";
+import { MoreHorizontal, Trash2, Calendar, CheckSquare, CircleCheck, CircleDashed, Paperclip, UserRound } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { TaskDetailDialog } from "@/components/TaskDetailDialog";
 import { useChecklists } from "@/hooks/useChecklists";
 
 interface TaskCardProps {
+  boardId: string;
   task: {
     id: string;
     title: string;
@@ -18,6 +20,8 @@ interface TaskCardProps {
     priority: string;
     due_date: string | null;
     is_done?: boolean;
+    assigned_to?: string | null;
+    assignee_profile?: { display_name: string | null; avatar_url: string | null } | null;
     task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
     task_attachments?: { count: number }[];
   };
@@ -34,7 +38,7 @@ const priorityConfig = {
   high: { label: "High", className: "bg-priority-high/15 text-priority-high border-priority-high/30" },
 } as const;
 
-export function TaskCard({ task, isDragging, onUpdate, onDelete, onMarkDone, onMarkUndone }: TaskCardProps) {
+export function TaskCard({ boardId, task, isDragging, onUpdate, onDelete, onMarkDone, onMarkUndone }: TaskCardProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const {
@@ -174,6 +178,16 @@ export function TaskCard({ task, isDragging, onUpdate, onDelete, onMarkDone, onM
                   Done
                 </Badge>
               )}
+              {task.assignee_profile ? (
+                <Avatar className="h-4 w-4">
+                  <AvatarImage src={task.assignee_profile.avatar_url ?? ""} />
+                  <AvatarFallback className="text-[8px]">
+                    {task.assignee_profile.display_name?.slice(0, 2).toUpperCase() ?? "?"}
+                  </AvatarFallback>
+                </Avatar>
+              ) : task.assigned_to ? (
+                <UserRound className="h-3 w-3 text-muted-foreground" />
+              ) : null}
             </div>
           </div>
           {onDelete && (
@@ -201,6 +215,7 @@ export function TaskCard({ task, isDragging, onUpdate, onDelete, onMarkDone, onM
 
       {onUpdate && onDelete && (
         <TaskDetailDialog
+          boardId={boardId}
           task={task}
           open={dialogOpen}
           onOpenChange={setDialogOpen}
