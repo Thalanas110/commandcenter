@@ -9,11 +9,8 @@ export function useBoards() {
   const boardsQuery = useQuery({
     queryKey: ["boards", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("boards")
-        .select("*")
-        .eq("owner_id", user!.id)
-        .order("created_at", { ascending: false });
+      // Use RPC to get boards owned by OR shared with the user
+      const { data, error } = await supabase.rpc("get_my_boards");
       if (error) throw error;
       return data;
     },

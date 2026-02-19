@@ -17,6 +17,7 @@ import AdminOverviewPage from "./pages/admin/AdminOverview";
 import AdminUsersPage from "./pages/admin/AdminUsers";
 import AdminLabelsPage from "./pages/admin/AdminLabels";
 import AdminActivityPage from "./pages/admin/AdminActivity";
+import JoinBoardPage from "./pages/JoinBoard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             {/* Protected user routes */}
             <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
             <Route path="/board/:id" element={<ProtectedRoute><BoardViewPage /></ProtectedRoute>} />
+            <Route path="/join/:token" element={<JoinBoardPage />} />
 
             {/* Admin routes */}
             <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>

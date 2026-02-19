@@ -28,6 +28,7 @@ import { CategoryHeader } from "@/components/CategoryHeader";
 import { CategoryManagerDialog } from "@/components/CategoryManagerDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BoardShareDialog } from "@/components/BoardShareDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +44,36 @@ import {
   Tags,
 } from "lucide-react";
 import { useBoards } from "@/hooks/useBoards";
+import { useBoardSharing } from "@/hooks/useBoardSharing";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+
+function BoardMembersList({ boardId }: { boardId: string }) {
+  const { members } = useBoardSharing(boardId);
+
+  if (members.length === 0) return null;
+
+  const displayMembers = members.slice(0, 4);
+  const remaining = members.length - 4;
+
+  return (
+    <div className="flex items-center -space-x-2 mr-2">
+      {displayMembers.map((member) => (
+        <Avatar key={member.user_id} className="h-8 w-8 border-2 border-background">
+          <AvatarImage src={member.avatar_url || ""} />
+          <AvatarFallback className="text-[10px] bg-primary/10">
+            {member.display_name?.slice(0, 2).toUpperCase() || "U"}
+          </AvatarFallback>
+        </Avatar>
+      ))}
+      {remaining > 0 && (
+        <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-medium">
+          +{remaining}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function BoardViewPage() {
   const { id: boardId } = useParams<{ id: string }>();
@@ -227,6 +258,13 @@ export default function BoardViewPage() {
           </Button>
           <h1 className="text-xl font-bold">{board?.name ?? "Board"}</h1>
           <div className="ml-auto flex items-center gap-2">
+            {/* Member Avatars */}
+            {boardId && <BoardMembersList boardId={boardId} />}
+
+            {/* Share button */}
+            {/* Share button */}
+            {boardId && <BoardShareDialog boardId={boardId} />}
+
             {/* Background image controls */}
             <input
               ref={bgFileInputRef}
