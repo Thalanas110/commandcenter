@@ -20,6 +20,7 @@ interface TaskCardProps {
     priority: string;
     due_date: string | null;
     is_done?: boolean;
+    cover_image_url?: string | null;
     assigned_to?: string | null;
     assignee_profile?: { display_name: string | null; avatar_url: string | null } | null;
     task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
@@ -87,6 +88,16 @@ export function TaskCard({ boardId, task, isDragging, onUpdate, onDelete, onMark
           isOverdue && "border-destructive/50 bg-destructive/5"
         )}
       >
+        {/* Card Cover Image */}
+        {task.cover_image_url && (
+          <div className="-m-3 mb-3 overflow-hidden rounded-t-[calc(var(--radius)-1px)]">
+            <img
+              src={task.cover_image_url}
+              alt="Card cover"
+              className="h-28 w-full object-cover"
+            />
+          </div>
+        )}
         <div className="flex items-start gap-2">
           {/* Done toggle button */}
           {(onMarkDone || onMarkUndone) && (

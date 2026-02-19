@@ -16,6 +16,7 @@ export interface TaskRecord {
   column_id: string;
   order_index: number;
   is_done?: boolean;
+  cover_image_url?: string | null;
   assigned_to?: string | null;
   assignee_profile?: AssigneeProfile | null;
   task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
