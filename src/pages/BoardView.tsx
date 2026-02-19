@@ -26,6 +26,7 @@ import { KanbanColumn } from "@/components/KanbanColumn";
 import { TaskCard } from "@/components/TaskCard";
 import { CategoryHeader } from "@/components/CategoryHeader";
 import { CategoryManagerDialog } from "@/components/CategoryManagerDialog";
+import { LabelManagerDialog } from "@/components/LabelManagerDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BoardShareDialog } from "@/components/BoardShareDialog";
@@ -120,6 +121,7 @@ export default function BoardViewPage() {
       : undefined;
   const bgFileInputRef = useRef<HTMLInputElement>(null);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<
     Record<string, boolean>
   >({});
@@ -300,6 +302,17 @@ export default function BoardViewPage() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Labels button */}
+            {boardId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLabelDialogOpen(true)}
+              >
+                <Tags className="mr-1 h-4 w-4" /> Labels
+              </Button>
+            )}
 
             {/* Categories button */}
             <Button
@@ -507,6 +520,15 @@ export default function BoardViewPage() {
           )}
         </div>
       </div>
+
+      {/* Label Manager Dialog */}
+      {boardId && (
+        <LabelManagerDialog
+          boardId={boardId}
+          open={labelDialogOpen}
+          onOpenChange={setLabelDialogOpen}
+        />
+      )}
 
       {/* Category Manager Dialog */}
       <CategoryManagerDialog

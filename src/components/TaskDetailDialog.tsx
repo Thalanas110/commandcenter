@@ -11,7 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useChecklists } from "@/hooks/useChecklists";
 import { useTaskAttachments, TaskAttachment } from "@/hooks/useTaskAttachments";
 import { useBoardSharing } from "@/hooks/useBoardSharing";
-import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound, ImageIcon } from "lucide-react";
+import { useLabels } from "@/hooks/useLabels";
+import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound, ImageIcon, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -33,6 +34,7 @@ interface TaskDetailDialogProps {
         cover_image_url?: string | null;
         assigned_to?: string | null;
         assignee_profile?: { display_name: string | null; avatar_url: string | null } | null;
+        task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
     };
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -55,6 +57,9 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
     const { items: checklistItems, createItem, updateItem, deleteItem } = useChecklists(task.id);
     const { attachments, uploadAttachment, deleteAttachment, isLoading: isLoadingAttachments } = useTaskAttachments(task.id);
     const { members } = useBoardSharing(boardId);
+    const { labels: boardLabels, toggleTaskLabel } = useLabels(boardId);
+
+    const appliedLabelIds = new Set((task.task_labels ?? []).map((tl) => tl.label_id));
 
     const completedCount = checklistItems.filter((i) => i.is_completed).length;
     const totalCount = checklistItems.length;
@@ -340,6 +345,55 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {/* Labels */}
+                        {boardLabels.length > 0 && (
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                    <Tag className="h-4 w-4" />
+                                    Labels
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {boardLabels.map((label) => {
+                                        const applied = appliedLabelIds.has(label.id);
+                                        return (
+                                            <button
+                                                key={label.id}
+                                                type="button"
+                                                onClick={() =>
+                                                    toggleTaskLabel.mutate({
+                                                        taskId: task.id,
+                                                        labelId: label.id,
+                                                        attach: !applied,
+                                                    })
+                                                }
+                                                className={cn(
+                                                    "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all",
+                                                    "border focus:outline-none focus:ring-2 focus:ring-offset-1 hover:scale-105",
+                                                    applied
+                                                        ? "opacity-100 ring-1"
+                                                        : "opacity-50 hover:opacity-80"
+                                                )}
+                                                style={{
+                                                    backgroundColor: applied ? `${label.color}25` : "transparent",
+                                                    borderColor: applied ? label.color : `${label.color}60`,
+                                                    color: label.color,
+                                                    ...(applied ? { ringColor: label.color } : {}),
+                                                }}
+                                                aria-pressed={applied}
+                                                aria-label={`${applied ? "Remove" : "Add"} label: ${label.name}`}
+                                            >
+                                                <span
+                                                    className="h-2 w-2 rounded-full shrink-0"
+                                                    style={{ backgroundColor: label.color }}
+                                                />
+                                                {label.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Description */}
                         <div className="space-y-2">
