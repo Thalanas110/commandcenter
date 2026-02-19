@@ -6,6 +6,9 @@ export function useColumns(boardId: string | undefined) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["columns", boardId] });
+
   const columnsQuery = useQuery({
     queryKey: ["columns", boardId],
     queryFn: async () => {
@@ -29,19 +32,18 @@ export function useColumns(boardId: string | undefined) {
         .insert({ name, board_id: bId, order_index: maxOrder });
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["columns", boardId] });
-    },
+    onSuccess: invalidate,
   });
 
   const updateColumn = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { error } = await supabase.from("columns").update({ name }).eq("id", id);
+    mutationFn: async (
+      updates: { id: string } & Partial<{ name: string; cover_image_url: string | null }>
+    ) => {
+      const { id, ...fields } = updates;
+      const { error } = await supabase.from("columns").update(fields).eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["columns", boardId] });
-    },
+    onSuccess: invalidate,
   });
 
   const deleteColumn = useMutation({
@@ -49,21 +51,58 @@ export function useColumns(boardId: string | undefined) {
       const { error } = await supabase.from("columns").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["columns", boardId] });
-    },
+    onSuccess: invalidate,
   });
 
   const reorderColumns = useMutation({
     mutationFn: async (orderedIds: string[]) => {
-      const updates = orderedIds.map((id, index) => 
+      const updates = orderedIds.map((id, index) =>
         supabase.from("columns").update({ order_index: index }).eq("id", id)
       );
       await Promise.all(updates);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["columns", boardId] });
+    onSuccess: invalidate,
+  });
+
+  const uploadColumnCover = useMutation({
+    mutationFn: async ({ columnId, file }: { columnId: string; file: File }) => {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const filePath = `${columnId}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("column-covers")
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("column-covers")
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from("columns")
+        .update({ cover_image_url: urlData.publicUrl })
+        .eq("id", columnId);
+      if (updateError) throw updateError;
     },
+    onSuccess: invalidate,
+  });
+
+  const removeColumnCover = useMutation({
+    mutationFn: async ({ columnId, currentUrl }: { columnId: string; currentUrl: string }) => {
+      // Extract the storage path from the public URL
+      const parts = currentUrl.split("/column-covers/");
+      if (parts.length > 1) {
+        const storagePath = decodeURIComponent(parts[1]);
+        await supabase.storage.from("column-covers").remove([storagePath]);
+      }
+
+      const { error } = await supabase
+        .from("columns")
+        .update({ cover_image_url: null })
+        .eq("id", columnId);
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
   });
 
   return {
@@ -73,5 +112,7 @@ export function useColumns(boardId: string | undefined) {
     updateColumn,
     deleteColumn,
     reorderColumns,
+    uploadColumnCover,
+    removeColumnCover,
   };
 }

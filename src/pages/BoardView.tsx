@@ -27,7 +27,7 @@ export default function BoardViewPage() {
   const { id: boardId } = useParams<{ id: string }>();
   const { boards } = useBoards();
   const board = boards.find((b) => b.id === boardId);
-  const { columns, isLoading: colLoading, createColumn, updateColumn, deleteColumn, reorderColumns } = useColumns(boardId);
+  const { columns, isLoading: colLoading, createColumn, updateColumn, deleteColumn, reorderColumns, uploadColumnCover, removeColumnCover } = useColumns(boardId);
   const { tasks, isLoading: taskLoading, createTask, updateTask, deleteTask, moveTask } = useTasks(boardId);
   useRealtimeBoard(boardId);
 
@@ -132,6 +132,8 @@ export default function BoardViewPage() {
                     }
                     onUpdateTask={(id, updates) => updateTask.mutate({ id, ...updates })}
                     onDeleteTask={(id) => deleteTask.mutate(id)}
+                    onUploadCover={(file) => uploadColumnCover.mutate({ columnId: column.id, file })}
+                    onRemoveCover={() => column.cover_image_url && removeColumnCover.mutate({ columnId: column.id, currentUrl: column.cover_image_url })}
                   />
                 ))}
               </div>
