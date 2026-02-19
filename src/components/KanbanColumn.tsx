@@ -20,6 +20,7 @@ interface KanbanColumnProps {
     due_date: string | null;
     column_id: string;
     order_index: number;
+    is_done?: boolean;
     task_labels?: Array<{ label_id: string; labels: { id: string; name: string; color: string } | null }>;
   }>;
   onRename: (name: string) => void;
@@ -31,9 +32,11 @@ interface KanbanColumnProps {
   onRemoveCover?: () => void;
   categories?: Category[];
   onChangeCategory?: (categoryId: string | null) => void;
+  onMarkDone?: (taskId: string) => void;
+  onMarkUndone?: (taskId: string) => void;
 }
 
-export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, onUpdateTask, onDeleteTask, onUploadCover, onRemoveCover, categories, onChangeCategory }: KanbanColumnProps) {
+export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, onUpdateTask, onDeleteTask, onUploadCover, onRemoveCover, categories, onChangeCategory, onMarkDone, onMarkUndone }: KanbanColumnProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(column.name);
   const [isAdding, setIsAdding] = useState(false);
@@ -187,6 +190,8 @@ export function KanbanColumn({ column, tasks, onRename, onDelete, onCreateTask, 
                 task={task}
                 onUpdate={(updates) => onUpdateTask(task.id, updates)}
                 onDelete={() => onDeleteTask(task.id)}
+                onMarkDone={onMarkDone ? () => onMarkDone(task.id) : undefined}
+                onMarkUndone={onMarkUndone ? () => onMarkUndone(task.id) : undefined}
               />
             ))}
           </SortableContext>

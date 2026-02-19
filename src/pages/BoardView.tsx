@@ -19,6 +19,7 @@ import {
 import { useColumns } from "@/hooks/useColumns";
 import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
+import { useAutoMoveCards } from "@/hooks/useAutoMoveCards";
 import { useRealtimeBoard } from "@/hooks/useRealtime";
 import { AppHeader } from "@/components/AppHeader";
 import { KanbanColumn } from "@/components/KanbanColumn";
@@ -64,6 +65,8 @@ export default function BoardViewPage() {
     updateTask,
     deleteTask,
     moveTask,
+    markDone,
+    markUndone,
   } = useTasks(boardId);
   const {
     categories,
@@ -72,6 +75,9 @@ export default function BoardViewPage() {
     deleteCategory,
   } = useCategories(boardId);
   useRealtimeBoard(boardId);
+
+  // Auto-move overdue → On Hold, done → Done
+  useAutoMoveCards(tasks, columns, tasks, moveTask, colLoading || taskLoading);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<"column" | "task" | null>(null);
@@ -413,6 +419,30 @@ export default function BoardViewPage() {
                                     category_id: categoryId,
                                   })
                                 }
+                                onMarkDone={(taskId) => {
+                                  // Find the "Done" column in the same category
+                                  const doneCol = columns.find(
+                                    (c) =>
+                                      c.category_id === column.category_id &&
+                                      c.name.toLowerCase().trim() === "done"
+                                  );
+                                  if (doneCol) {
+                                    const tasksInDone = tasks.filter(
+                                      (t) => t.column_id === doneCol.id
+                                    );
+                                    markDone.mutate({
+                                      taskId,
+                                      targetColumnId: doneCol.id,
+                                      targetOrderIndex: tasksInDone.length,
+                                    });
+                                  } else {
+                                    // No Done column found — just mark is_done without moving
+                                    updateTask.mutate({ id: taskId, is_done: true } as never);
+                                  }
+                                }}
+                                onMarkUndone={(taskId) => {
+                                  markUndone.mutate(taskId);
+                                }}
                               />
                             ))}
                           </div>

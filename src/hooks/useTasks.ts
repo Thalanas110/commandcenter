@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+interface MarkDoneInput {
+  taskId: string;
+  targetColumnId: string;
+  targetOrderIndex: number;
+}
+
 interface CreateTaskInput {
   title: string;
   description?: string;
@@ -125,6 +131,45 @@ export function useTasks(boardId: string | undefined) {
     },
   });
 
+  const markDone = useMutation({
+    mutationFn: async ({ taskId, targetColumnId, targetOrderIndex }: MarkDoneInput) => {
+      const { error } = await supabase
+        .from("tasks")
+        .update({
+          is_done: true,
+          column_id: targetColumnId,
+          order_index: targetOrderIndex,
+        })
+        .eq("id", taskId);
+      if (error) throw error;
+
+      if (user) {
+        await supabase.from("activity_logs").insert({
+          user_id: user.id,
+          action: "marked_done",
+          entity_type: "task",
+          entity_id: taskId,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
+    },
+  });
+
+  const markUndone = useMutation({
+    mutationFn: async (taskId: string) => {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ is_done: false })
+        .eq("id", taskId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
+    },
+  });
+
   return {
     tasks: tasksQuery.data ?? [],
     isLoading: tasksQuery.isLoading,
@@ -132,5 +177,7 @@ export function useTasks(boardId: string | undefined) {
     updateTask,
     deleteTask,
     moveTask,
+    markDone,
+    markUndone,
   };
 }

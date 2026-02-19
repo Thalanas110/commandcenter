@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useChecklists } from "@/hooks/useChecklists";
-import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays } from "lucide-react";
+import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const priorityConfig = {
@@ -24,14 +24,17 @@ interface TaskDetailDialogProps {
         description: string | null;
         priority: string;
         due_date: string | null;
+        is_done?: boolean;
     };
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onUpdate: (updates: Record<string, unknown>) => void;
     onDelete: () => void;
+    onMarkDone?: () => void;
+    onMarkUndone?: () => void;
 }
 
-export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete }: TaskDetailDialogProps) {
+export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete, onMarkDone, onMarkUndone }: TaskDetailDialogProps) {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editTitle, setEditTitle] = useState(task.title);
     const [description, setDescription] = useState(task.description ?? "");
@@ -71,6 +74,16 @@ export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete 
 
     const priority = priorityConfig[task.priority as keyof typeof priorityConfig] ?? priorityConfig.medium;
 
+    // Overdue detection
+    const isOverdue = (() => {
+        if (!task.due_date || task.is_done) return false;
+        const due = new Date(task.due_date);
+        due.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return due < today;
+    })();
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
@@ -94,7 +107,10 @@ export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete 
                                 setEditTitle(task.title);
                                 setIsEditingTitle(true);
                             }}
-                            className="w-full text-left text-lg font-semibold hover:bg-muted/50 rounded px-1 py-0.5 transition-colors"
+                            className={cn(
+                                "w-full text-left text-lg font-semibold hover:bg-muted/50 rounded px-1 py-0.5 transition-colors",
+                                task.is_done && "line-through text-muted-foreground"
+                            )}
                         >
                             {task.title}
                         </button>
@@ -102,8 +118,32 @@ export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete 
                 </DialogHeader>
 
                 <div className="space-y-5">
-                    {/* Priority & Due Date row */}
+                    {/* Done status + Priority & Due Date row */}
                     <div className="flex flex-wrap items-center gap-3">
+                        {/* Mark as Done / Undo Done button */}
+                        {(onMarkDone || onMarkUndone) && (
+                            <Button
+                                variant={task.is_done ? "default" : "outline"}
+                                size="sm"
+                                className={cn(
+                                    task.is_done && "bg-priority-low hover:bg-priority-low/90"
+                                )}
+                                onClick={() => {
+                                    if (task.is_done) {
+                                        onMarkUndone?.();
+                                    } else {
+                                        onMarkDone?.();
+                                    }
+                                }}
+                            >
+                                {task.is_done ? (
+                                    <><CircleCheck className="mr-1 h-4 w-4" /> Done</>
+                                ) : (
+                                    <><CircleDashed className="mr-1 h-4 w-4" /> Mark Done</>
+                                )}
+                            </Button>
+                        )}
+
                         <div className="flex items-center gap-2">
                             <Flag className="h-4 w-4 text-muted-foreground" />
                             <Select
@@ -126,13 +166,24 @@ export function TaskDetailDialog({ task, open, onOpenChange, onUpdate, onDelete 
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                            <CalendarDays className={cn(
+                                "h-4 w-4",
+                                isOverdue ? "text-destructive" : "text-muted-foreground"
+                            )} />
                             <Input
                                 type="date"
                                 value={task.due_date ?? ""}
                                 onChange={(e) => onUpdate({ due_date: e.target.value || null })}
-                                className="h-8 w-40"
+                                className={cn(
+                                    "h-8 w-40",
+                                    isOverdue && "border-destructive text-destructive"
+                                )}
                             />
+                            {isOverdue && (
+                                <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/30">
+                                    Overdue
+                                </Badge>
+                            )}
                         </div>
                     </div>
 

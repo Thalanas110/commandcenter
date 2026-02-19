@@ -34,7 +34,7 @@ export function useCategories(boardId: string | undefined) {
         enabled: !!boardId && !!user,
     });
 
-    const DEFAULT_COLUMNS = ["To Do", "In Progress", "Review", "Done", "Blocked"] as const;
+    const DEFAULT_COLUMNS = ["To Do", "In Progress", "Review", "Done", "On Hold", "Blocked"] as const;
 
     const createCategory = useMutation({
         mutationFn: async ({ name, color }: { name: string; color?: string }) => {
