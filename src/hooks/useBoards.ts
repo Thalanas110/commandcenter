@@ -31,7 +31,7 @@ export function useBoards() {
       if (error) throw error;
 
       // Create default columns
-      const defaultColumns = ["To Do", "In Progress", "Done"];
+      const defaultColumns = ["To Do", "In Progress", "Done", "Blocked", "On Hold"];
       const columnsToInsert = defaultColumns.map((colName, index) => ({
         name: colName,
         board_id: data.id,
