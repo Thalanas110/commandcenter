@@ -28,16 +28,16 @@ export const categoryService = {
     orderIndex: number,
     color?: string
   ): Promise<string> {
-    const insertData: Record<string, unknown> = {
+    const insertData = {
       name,
       board_id: boardId,
       order_index: orderIndex,
+      ...(color ? { color } : {}),
     };
-    if (color) insertData.color = color;
 
     const { data: newCategory, error } = await supabase
       .from("categories")
-      .insert(insertData)
+      .insert(insertData as never)
       .select("id")
       .single();
     if (error) throw error;

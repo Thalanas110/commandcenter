@@ -52,6 +52,6 @@ export const authService = {
       _token: token,
     });
     if (error) throw error;
-    return data as { success: boolean; board_id?: string; message?: string };
+    return data as unknown as { success: boolean; board_id?: string; message?: string };
   },
 };

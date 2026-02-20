@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { taskService } from "@/services/taskService";
 import { adminService } from "@/services/adminService";
 import { useAuth } from "./useAuth";
+import { useToast } from "./use-toast";
 
 interface AssigneeProfile {
   display_name: string | null;
@@ -49,6 +50,7 @@ interface MoveTaskInput {
 export function useTasks(boardId: string | undefined) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const tasksQuery = useQuery({
     queryKey: ["tasks", boardId],
@@ -92,6 +94,13 @@ export function useTasks(boardId: string | undefined) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
+    },
+    onError: () => {
+      toast({
+        title: "An error occurred",
+        description: "Could not delete the card. Please contact tech support.",
+        variant: "destructive",
+      });
     },
   });
 

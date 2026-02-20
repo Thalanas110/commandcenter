@@ -33,14 +33,14 @@ export const columnService = {
     orderIndex: number,
     categoryId?: string | null
   ) {
-    const insertData: Record<string, unknown> = {
+    const insertData = {
       name,
       board_id: boardId,
       order_index: orderIndex,
+      ...(categoryId ? { category_id: categoryId } : {}),
     };
-    if (categoryId) insertData.category_id = categoryId;
 
-    const { error } = await supabase.from("columns").insert(insertData);
+    const { error } = await supabase.from("columns").insert(insertData as never);
     if (error) throw error;
   },
 

@@ -154,6 +154,7 @@ export type Database = {
       }
       boards: {
         Row: {
+          background_image_url: string | null
           created_at: string
           id: string
           name: string
@@ -161,6 +162,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          background_image_url?: string | null
           created_at?: string
           id?: string
           name: string
@@ -168,6 +170,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          background_image_url?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -269,6 +272,47 @@ export type Database = {
         }
         Relationships: []
       }
+      task_attachments: {
+        Row: {
+          id: string
+          task_id: string
+          file_path: string
+          file_name: string
+          file_type: string
+          file_size: number
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          task_id: string
+          file_path: string
+          file_name: string
+          file_type: string
+          file_size: number
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          task_id?: string
+          file_path?: string
+          file_name?: string
+          file_type?: string
+          file_size?: number
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_labels: {
         Row: {
           label_id: string
@@ -333,6 +377,13 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comments_user_id_profiles_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -461,12 +512,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_boards: {
+        Args: Record<PropertyKey, never>
+        Returns: Array<{
+          background_image_url: string | null
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }>
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      join_board_via_token: {
+        Args: {
+          _token: string
+        }
+        Returns: Json
       }
     }
     Enums: {
