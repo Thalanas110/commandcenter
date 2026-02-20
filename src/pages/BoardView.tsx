@@ -50,6 +50,7 @@ import {
   LayoutDashboard,
   GanttChartIcon,
   BarChart2,
+  CalendarDays,
 } from "lucide-react";
 import { useBoards } from "@/hooks/useBoards";
 import { useBoardSharing } from "@/hooks/useBoardSharing";
@@ -57,6 +58,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useKPIs } from "@/hooks/useKPIs";
 import { KPISummaryCards } from "@/components/KPISummaryCards";
 import { GanttChart } from "@/components/GanttChart";
+import { CalendarView } from "@/components/CalendarView";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
@@ -121,7 +123,7 @@ export default function BoardViewPage() {
   } = useCategories(boardId);
   useRealtimeBoard(boardId);
 
-  const [activeView, setActiveView] = useState<"board" | "gantt" | "kpis">("board");
+  const [activeView, setActiveView] = useState<"board" | "gantt" | "kpis" | "calendar">("board");
 
   const {
     summary,
@@ -443,6 +445,7 @@ export default function BoardViewPage() {
           {([
             { key: "board", label: "Board", icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
             { key: "gantt", label: "Gantt", icon: <GanttChartIcon className="h-3.5 w-3.5" /> },
+            { key: "calendar", label: "Calendar", icon: <CalendarDays className="h-3.5 w-3.5" /> },
             { key: "kpis", label: "KPIs", icon: <BarChart2 className="h-3.5 w-3.5" /> },
           ] as const).map(({ key, label, icon }) => (
             <button
@@ -475,6 +478,20 @@ export default function BoardViewPage() {
               </div>
             </div>
             <GanttChart tasks={ganttTasks} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Calendar view ── */}
+      {activeView === "calendar" && (
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-6">
+          <div className="mx-auto max-w-6xl h-full">
+            <CalendarView
+              boardId={boardId!}
+              tasks={tasks}
+              onUpdateTask={(id, updates) => updateTask.mutate({ id, ...updates } as never)}
+              onDeleteTask={(id) => deleteTask.mutate(id)}
+            />
           </div>
         </div>
       )}
