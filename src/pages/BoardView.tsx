@@ -45,9 +45,16 @@ import {
   Wallpaper,
   Tags,
   MoreHorizontal,
+  LayoutDashboard,
+  GanttChartIcon,
+  BarChart2,
 } from "lucide-react";
 import { useBoards } from "@/hooks/useBoards";
 import { useBoardSharing } from "@/hooks/useBoardSharing";
+import { useAuth } from "@/hooks/useAuth";
+import { useKPIs } from "@/hooks/useKPIs";
+import { KPISummaryCards } from "@/components/KPISummaryCards";
+import { GanttChart } from "@/components/GanttChart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
@@ -80,8 +87,10 @@ function BoardMembersList({ boardId }: { boardId: string }) {
 
 export default function BoardViewPage() {
   const { id: boardId } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const { boards, uploadBoardBackground, removeBoardBackground } = useBoards();
   const board = boards.find((b) => b.id === boardId);
+  const isOwner = board?.owner_id === user?.id;
   const {
     columns,
     isLoading: colLoading,
@@ -109,6 +118,18 @@ export default function BoardViewPage() {
     deleteCategory,
   } = useCategories(boardId);
   useRealtimeBoard(boardId);
+
+  const [activeView, setActiveView] = useState<"board" | "gantt" | "kpis">("board");
+
+  const {
+    summary,
+    tasksByColumn,
+    tasksByPriority,
+    tasksByMember,
+    completionTrend,
+    ganttTasks,
+    overdueDetails,
+  } = useKPIs(boardId);
 
   // Auto-move overdue → On Hold, done → Done
   useAutoMoveCards(tasks, columns, tasks, moveTask, colLoading || taskLoading);
@@ -306,7 +327,8 @@ export default function BoardViewPage() {
               onChange={handleBgFileChange}
             />
 
-            {/* ── Desktop action bar (md+) ── */}
+            {/* ── Desktop action bar (md+) — board view only ── */}
+            {activeView === "board" && (
             <div className="hidden md:flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -349,8 +371,10 @@ export default function BoardViewPage() {
                 <Plus className="mr-1 h-4 w-4" /> Add Column
               </Button>
             </div>
+            )}
 
-            {/* ── Mobile overflow menu (hidden on md+) ── */}
+            {/* ── Mobile overflow menu (hidden on md+) — board view only ── */}
+            {activeView === "board" && (
             <div className="md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -399,10 +423,77 @@ export default function BoardViewPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            )}
           </div>
         </div>
       </div>
 
+      {/* ── View tab strip ── */}
+      <div className={`shrink-0 border-b ${backgroundUrl ? "bg-card/80 backdrop-blur-sm" : "bg-card"}`}>
+        <div className="container flex h-9 items-center gap-1 px-3">
+          {([
+            { key: "board", label: "Board", icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
+            { key: "gantt", label: "Gantt", icon: <GanttChartIcon className="h-3.5 w-3.5" /> },
+            { key: "kpis", label: "KPIs", icon: <BarChart2 className="h-3.5 w-3.5" /> },
+          ] as const).map(({ key, label, icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveView(key)}
+              className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                activeView === key
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {icon}
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Gantt view ── */}
+      {activeView === "gantt" && (
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-6">
+          <div className="mx-auto max-w-6xl space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-base font-semibold sm:text-lg">Gantt Chart</h2>
+                <p className="text-xs text-muted-foreground">
+                  Timeline view of all tasks with due dates.
+                  {isOwner && " Set start dates on tasks to control bar lengths."}
+                </p>
+              </div>
+            </div>
+            <GanttChart tasks={ganttTasks} />
+          </div>
+        </div>
+      )}
+
+      {/* ── KPI view ── */}
+      {activeView === "kpis" && (
+        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-6">
+          <div className="mx-auto max-w-6xl space-y-3">
+            <div>
+              <h2 className="text-base font-semibold sm:text-lg">KPI Dashboard</h2>
+              <p className="text-xs text-muted-foreground">
+                Board performance metrics and analytics.
+              </p>
+            </div>
+            <KPISummaryCards
+              summary={summary}
+              tasksByColumn={tasksByColumn}
+              tasksByPriority={tasksByPriority}
+              tasksByMember={tasksByMember}
+              completionTrend={completionTrend}
+              overdueDetails={overdueDetails}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Board (kanban) view ── */}
+      {activeView === "board" && (
       <div
         ref={boardScrollRef}
         className="relative min-h-0 flex-1 overflow-x-auto overflow-y-auto p-2 sm:p-4"
@@ -581,6 +672,8 @@ export default function BoardViewPage() {
           )}
         </div>
       </div>
+
+      )}
 
       {/* Label Manager Dialog */}
       {boardId && (

@@ -14,6 +14,7 @@ export interface TaskRecord {
   description: string | null;
   priority: "low" | "medium" | "high";
   due_date: string | null;
+  start_date: string | null;
   column_id: string;
   order_index: number;
   is_done?: boolean;

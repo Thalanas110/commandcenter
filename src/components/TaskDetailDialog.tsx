@@ -33,6 +33,7 @@ interface TaskDetailDialogProps {
         description: string | null;
         priority: string;
         due_date: string | null;
+        start_date?: string | null;
         is_done?: boolean;
         cover_image_url?: string | null;
         assigned_to?: string | null;
@@ -281,26 +282,42 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                             </div>
                         </div>
 
-                        {/* Row 2: Due date */}
-                        <div className="flex items-center gap-2">
-                            <CalendarDays className={cn(
-                                "h-4 w-4 shrink-0",
-                                isOverdue ? "text-destructive" : "text-muted-foreground"
-                            )} />
-                            <Input
-                                type="date"
-                                value={task.due_date ?? ""}
-                                onChange={(e) => onUpdate({ due_date: e.target.value || null })}
-                                className={cn(
-                                    "h-8 flex-1 min-w-0",
-                                    isOverdue && "border-destructive text-destructive"
-                                )}
-                            />
-                            {isOverdue && (
-                                <Badge variant="outline" className="shrink-0 text-[10px] bg-destructive/10 text-destructive border-destructive/30">
-                                    Overdue
-                                </Badge>
-                            )}
+                        {/* Row 2: Dates — start + due */}
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {/* Start date */}
+                            <div className="flex items-center gap-2">
+                                <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                <div className="flex flex-1 flex-col gap-0.5">
+                                    <span className="text-[10px] font-medium text-muted-foreground leading-none">Start</span>
+                                    <Input
+                                        type="date"
+                                        value={task.start_date ?? ""}
+                                        onChange={(e) => onUpdate({ start_date: e.target.value || null })}
+                                        className="h-8 w-full min-w-0"
+                                    />
+                                </div>
+                            </div>
+                            {/* Due date */}
+                            <div className="flex items-center gap-2">
+                                <CalendarDays className={cn(
+                                    "h-4 w-4 shrink-0",
+                                    isOverdue ? "text-destructive" : "text-muted-foreground"
+                                )} />
+                                <div className="flex flex-1 flex-col gap-0.5">
+                                    <span className={cn("text-[10px] font-medium leading-none", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                                        Due{isOverdue && " — Overdue"}
+                                    </span>
+                                    <Input
+                                        type="date"
+                                        value={task.due_date ?? ""}
+                                        onChange={(e) => onUpdate({ due_date: e.target.value || null })}
+                                        className={cn(
+                                            "h-8 w-full min-w-0",
+                                            isOverdue && "border-destructive text-destructive"
+                                        )}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         {/* Assignee */}

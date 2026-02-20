@@ -13,7 +13,7 @@ export const taskService = {
     const { data, error } = await supabase
       .from("tasks")
       .select(`
-        *,
+        *, start_date,
         task_labels (
           label_id,
           labels (*)
