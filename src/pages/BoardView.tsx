@@ -28,6 +28,7 @@ import { TaskCard } from "@/components/TaskCard";
 import { CategoryHeader } from "@/components/CategoryHeader";
 import { CategoryManagerDialog } from "@/components/CategoryManagerDialog";
 import { LabelManagerDialog } from "@/components/LabelManagerDialog";
+import { CreateColumnDialog } from "@/components/CreateColumnDialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BoardShareDialog } from "@/components/BoardShareDialog";
@@ -166,6 +167,12 @@ export default function BoardViewPage() {
   }, []);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [columnDialogOpen, setColumnDialogOpen] = useState(false);
+
+  const handleCreateColumn = (name: string, categoryId: string | null) => {
+    if (!boardId) return;
+    createColumn.mutate({ name, boardId, categoryId });
+  };
   const [collapsedCategories, setCollapsedCategories] = useState<
     Record<string, boolean>
   >({});
@@ -370,7 +377,7 @@ export default function BoardViewPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => boardId && createColumn.mutate({ name: "New Column", boardId })}
+                onClick={() => setColumnDialogOpen(true)}
               >
                 <Plus className="mr-1 h-4 w-4" /> Add Column
               </Button>
@@ -410,9 +417,7 @@ export default function BoardViewPage() {
                     <Tags className="mr-2 h-4 w-4" /> Categories
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => boardId && createColumn.mutate({ name: "New Column", boardId })}
-                  >
+                  <DropdownMenuItem onClick={() => setColumnDialogOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" /> Add Column
                   </DropdownMenuItem>
                   {/* Member avatars shown in mobile menu header */}
@@ -698,6 +703,14 @@ export default function BoardViewPage() {
         }
         onDeleteCategory={(id) => deleteCategory.mutate(id)}
         onUpdateCategory={(id, fields) => updateCategory.mutate({ id, ...fields })}
+      />
+
+      {/* Create Column Dialog */}
+      <CreateColumnDialog
+        open={columnDialogOpen}
+        onOpenChange={setColumnDialogOpen}
+        categories={categories}
+        onCreateColumn={handleCreateColumn}
       />
     </div>
   );
