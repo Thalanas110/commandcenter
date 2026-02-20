@@ -1,5 +1,5 @@
 -- ============================================
--- KanbanFlow Database Schema
+-- CommandFlow Database Schema
 -- ============================================
 
 -- Enums

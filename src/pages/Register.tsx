@@ -59,7 +59,7 @@ export default function RegisterPage() {
             <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl">Create your account</CardTitle>
-          <CardDescription>Start managing your tasks with KanbanFlow</CardDescription>
+          <CardDescription>Start managing your tasks with CommandFlow</CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>

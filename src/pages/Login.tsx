@@ -42,7 +42,7 @@ export default function LoginPage() {
             <LayoutDashboard className="h-6 w-6 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your KanbanFlow account</CardDescription>
+          <CardDescription>Sign in to your CommandFlow account</CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>

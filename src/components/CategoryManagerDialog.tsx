@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -11,20 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, Clock } from "lucide-react";
 import type { Category } from "@/hooks/useCategories";
-
-const PRESET_COLORS = [
-    "#6366f1",
-    "#8b5cf6",
-    "#ec4899",
-    "#ef4444",
-    "#f97316",
-    "#eab308",
-    "#22c55e",
-    "#14b8a6",
-    "#06b6d4",
-    "#3b82f6",
-    "#6b7280",
-];
 
 interface CategoryManagerDialogProps {
     open: boolean;
@@ -44,13 +30,14 @@ export function CategoryManagerDialog({
     onUpdateCategory,
 }: CategoryManagerDialogProps) {
     const [name, setName] = useState("");
-    const [color, setColor] = useState(PRESET_COLORS[0]);
+    const [color, setColor] = useState("#6366f1");
+    const colorInputRef = useRef<HTMLInputElement>(null);
 
     const handleCreate = () => {
         if (!name.trim()) return;
         onCreateCategory(name.trim(), color);
         setName("");
-        setColor(PRESET_COLORS[0]);
+        setColor("#6366f1");
     };
 
     return (
@@ -75,20 +62,24 @@ export function CategoryManagerDialog({
 
                     <div className="space-y-1.5">
                         <Label>Color</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {PRESET_COLORS.map((c) => (
-                                <button
-                                    type="button"
-                                    key={c}
-                                    className={`h-7 w-7 rounded-full transition-transform hover:scale-110 ${c === color
-                                            ? "ring-2 ring-ring ring-offset-2"
-                                            : ""
-                                        }`}
-                                    style={{ backgroundColor: c }}
-                                    onClick={() => setColor(c)}
-                                    aria-label={`Select color ${c}`}
-                                />
-                            ))}
+                        <div className="flex items-center gap-3">
+                            {/* Clickable swatch that opens the native color picker */}
+                            <button
+                                type="button"
+                                className="h-8 w-8 rounded-full border-2 border-border transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                style={{ backgroundColor: color }}
+                                onClick={() => colorInputRef.current?.click()}
+                                aria-label="Pick color"
+                            />
+                            <input
+                                ref={colorInputRef}
+                                type="color"
+                                value={color}
+                                onChange={(e) => setColor(e.target.value)}
+                                className="sr-only"
+                                tabIndex={-1}
+                            />
+                            <span className="text-sm font-mono text-muted-foreground">{color}</span>
                         </div>
                     </div>
 
@@ -139,6 +130,7 @@ function CategoryRow({ category, onDelete, onUpdate }: CategoryRowProps) {
             : ""
     );
     const [uncommitted, setUncommitted] = useState(false);
+    const rowColorRef = useRef<HTMLInputElement>(null);
 
     const handleWeeksBlur = () => {
         if (!uncommitted) return;
@@ -160,9 +152,21 @@ function CategoryRow({ category, onDelete, onUpdate }: CategoryRowProps) {
         <div className="space-y-1.5 rounded-md border px-3 py-2">
             {/* Name + color dot + delete */}
             <div className="flex items-center gap-2">
-                <div
-                    className="h-4 w-4 shrink-0 rounded-full"
+                {/* Clickable color swatch – opens native full color picker */}
+                <button
+                    type="button"
+                    className="h-5 w-5 shrink-0 rounded-full border border-border/60 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
                     style={{ backgroundColor: category.color }}
+                    onClick={() => rowColorRef.current?.click()}
+                    title="Change color"
+                />
+                <input
+                    ref={rowColorRef}
+                    type="color"
+                    defaultValue={category.color}
+                    onChange={(e) => onUpdate({ color: e.target.value })}
+                    className="sr-only"
+                    tabIndex={-1}
                 />
                 <span className="flex-1 truncate text-sm font-medium">
                     {category.name}

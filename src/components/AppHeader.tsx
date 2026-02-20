@@ -37,7 +37,7 @@ export function AppHeader() {
       <div className="container flex h-14 items-center justify-between gap-2">
         <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2 font-bold text-lg">
           <LayoutDashboard className="h-5 w-5 shrink-0 text-primary" />
-          <span className="hidden sm:inline">KanbanFlow</span>
+          <span className="hidden sm:inline">CommandFlow</span>
         </Link>
 
         <div className="flex items-center gap-1 sm:gap-2">
