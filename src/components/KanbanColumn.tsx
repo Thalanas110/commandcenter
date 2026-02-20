@@ -118,13 +118,14 @@ export function KanbanColumn({ boardId, column, tasks, onRename, onDelete, onCre
       />
 
       <div className="p-3">
-        <div className="mb-3 flex items-center justify-between" {...attributes} {...listeners}>
+        <div className="mb-3 flex items-center justify-between" {...attributes} {...(!isEditing ? listeners : {})}>
           {isEditing ? (
             <Input
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               onBlur={handleRename}
               onKeyDown={(e) => e.key === "Enter" && handleRename()}
+              onPointerDown={(e) => e.stopPropagation()}
               autoFocus
               className="h-7 text-sm font-semibold"
             />
