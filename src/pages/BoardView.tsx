@@ -249,7 +249,11 @@ export default function BoardViewPage() {
   const isLoading = colLoading || taskLoading;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="relative flex h-screen flex-col overflow-hidden bg-background" style={boardAreaStyle}>
+      {/* Dark overlay for readability when background image is set */}
+      {backgroundUrl && (
+        <div className="pointer-events-none absolute inset-0 bg-black/20" />
+      )}
       <AppHeader />
       <div
         className={`border-b ${backgroundUrl ? "bg-card/80 backdrop-blur-sm" : "bg-card"}`}
@@ -383,14 +387,8 @@ export default function BoardViewPage() {
       </div>
 
       <div
-        className="relative flex-1 overflow-x-auto p-2 sm:p-4"
-        style={boardAreaStyle}
+        className="relative min-h-0 flex-1 overflow-x-auto overflow-y-auto p-2 sm:p-4"
       >
-        {/* Dark overlay for readability when background image is set */}
-        {backgroundUrl && (
-          <div className="pointer-events-none absolute inset-0 bg-black/20" />
-        )}
-
         <div className="relative">
           {isLoading ? (
             <div className="flex gap-4">
@@ -422,7 +420,7 @@ export default function BoardViewPage() {
                       >
                         {/* Category header */}
                         {group.category ? (
-                          <div className="relative">
+                          <div className="sticky left-0 z-10 bg-background/90 backdrop-blur-sm">
                             <CategoryHeader
                               category={group.category}
                               columnCount={group.columns.length}
@@ -451,7 +449,7 @@ export default function BoardViewPage() {
                             />
                           </div>
                         ) : categories.length > 0 ? (
-                          <div className="mb-2 flex items-center gap-2">
+                          <div className="sticky left-0 z-10 mb-2 flex items-center gap-2 bg-background/90 backdrop-blur-sm">
                             <div className="h-6 w-1 shrink-0 rounded-full bg-muted-foreground/30" />
                             <span className="text-sm font-semibold text-muted-foreground">
                               Uncategorized
