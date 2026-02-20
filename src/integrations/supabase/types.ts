@@ -337,6 +337,48 @@ export type Database = {
           },
         ]
       }
+      task_links: {
+        Row: {
+          id: string
+          source_task_id: string
+          target_task_id: string
+          link_type: Database["public"]["Enums"]["task_link_type"]
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          source_task_id: string
+          target_task_id: string
+          link_type?: Database["public"]["Enums"]["task_link_type"]
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          source_task_id?: string
+          target_task_id?: string
+          link_type?: Database["public"]["Enums"]["task_link_type"]
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_links_source_task_id_fkey"
+            columns: ["source_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_links_target_task_id_fkey"
+            columns: ["target_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
@@ -430,6 +472,7 @@ export type Database = {
     Enums: {
       app_role: "user" | "admin"
       comment_category: "TASK_UPDATES" | "QUESTIONS" | "GENERAL_COMMENTS"
+      task_link_type: "relates_to" | "blocks" | "is_blocked_by" | "duplicates"
       task_priority: "low" | "medium" | "high"
     }
     CompositeTypes: {

@@ -13,12 +13,13 @@ import { useTaskAttachments, TaskAttachment } from "@/hooks/useTaskAttachments";
 import { useBoardSharing } from "@/hooks/useBoardSharing";
 import { useLabels } from "@/hooks/useLabels";
 import { useProfile } from "@/hooks/useProfile";
-import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound, ImageIcon, Tag, MessageSquare, Send, Pencil } from "lucide-react";
+import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound, ImageIcon, Tag, MessageSquare, Send, Pencil, Link2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/authService";
 import { taskService } from "@/services/taskService";
 import { attachmentService } from "@/services/attachmentService";
 import { useTaskComments, COMMENT_CATEGORIES, CommentCategory } from "@/hooks/useTaskComments";
+import { useTaskLinks, LINK_TYPE_CONFIG, TaskLinkType } from "@/hooks/useTaskLinks";
 
 const priorityConfig = {
     low: { label: "Low", className: "bg-priority-low/15 text-priority-low border-priority-low/30" },
@@ -59,6 +60,10 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
     const [isUploadingCover, setIsUploadingCover] = useState(false);
     const coverInputRef = useRef<HTMLInputElement>(null);
 
+    // Linked cards state
+    const [isAddingLink, setIsAddingLink] = useState(false);
+    const [newLinkType, setNewLinkType] = useState<TaskLinkType>("relates_to");
+
     // Comments state
     const [newCommentContent, setNewCommentContent] = useState("");
     const [newCommentCategory, setNewCommentCategory] = useState<CommentCategory>("GENERAL_COMMENTS");
@@ -73,6 +78,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
     const { labels: boardLabels, toggleTaskLabel } = useLabels(boardId);
     const { comments, isLoading: isLoadingComments, addComment, deleteComment, editComment } = useTaskComments(task.id);
     const { profile: currentProfile } = useProfile();
+    const { links, isLoadingLinks, searchResults, isSearching, searchQuery: linkSearchQuery, setSearch: setLinkSearch, addLink, removeLink } = useTaskLinks(task.id, boardId);
 
     // Fetch current user id once on mount
     useEffect(() => {
@@ -562,6 +568,151 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                     {uploadAttachment.isPending ? "Uploading..." : "Add Attachment"}
                                 </Button>
                             </div>
+                        </div>
+
+                        {/* Linked Cards */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                    <Link2 className="h-4 w-4" />
+                                    Linked Cards
+                                    {links.length > 0 && (
+                                        <span className="ml-auto text-xs">{links.length}</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {isLoadingLinks && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Loader2 className="h-3 w-3 animate-spin" /> Loading links...
+                                </div>
+                            )}
+
+                            {links.length > 0 && (
+                                <div className="space-y-1.5">
+                                    {links.map((link) => {
+                                        const cfg = LINK_TYPE_CONFIG[link.link_type];
+                                        const t = link.target_task;
+                                        const tPriority = t?.priority ? priorityConfig[t.priority as keyof typeof priorityConfig] : null;
+                                        return (
+                                            <div key={link.id} className="group flex items-center gap-2 rounded-md border p-2 hover:bg-muted/50 transition-colors">
+                                                <Badge variant="outline" className={cn("shrink-0 text-[10px] px-1.5 py-0 font-medium", cfg.color)}>
+                                                    {cfg.label}
+                                                </Badge>
+                                                <div className="flex-1 min-w-0">
+                                                    <span className={cn("text-sm", t?.is_done && "line-through text-muted-foreground")}>
+                                                        {t?.title ?? "(deleted)"}
+                                                    </span>
+                                                    {t?.column && (
+                                                        <span className="ml-1.5 text-xs text-muted-foreground">{t.column.name}</span>
+                                                    )}
+                                                </div>
+                                                {tPriority && (
+                                                    <Badge variant="outline" className={cn("shrink-0 text-[10px] px-1.5 py-0", tPriority.className)}>
+                                                        {tPriority.label}
+                                                    </Badge>
+                                                )}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-6 w-6 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                                                    onClick={() => removeLink.mutate(link.id)}
+                                                    disabled={removeLink.isPending}
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {isAddingLink ? (
+                                <div className="space-y-2 rounded-lg border p-3 bg-muted/20">
+                                    <Select value={newLinkType} onValueChange={(v) => setNewLinkType(v as TaskLinkType)}>
+                                        <SelectTrigger className="h-7 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {(Object.entries(LINK_TYPE_CONFIG) as [TaskLinkType, typeof LINK_TYPE_CONFIG[TaskLinkType]][]).map(([type, cfg]) => (
+                                                <SelectItem key={type} value={type}>
+                                                    <span className={cn("text-xs", cfg.color)}>{cfg.label}</span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                                        <Input
+                                            value={linkSearchQuery}
+                                            onChange={(e) => setLinkSearch(e.target.value)}
+                                            placeholder="Search cards..."
+                                            className="h-8 pl-7 text-sm"
+                                            autoFocus
+                                        />
+                                        {isSearching && (
+                                            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground pointer-events-none" />
+                                        )}
+                                    </div>
+
+                                    {searchResults.length > 0 && (
+                                        <div className="max-h-40 overflow-y-auto space-y-1 rounded border bg-background p-1">
+                                            {searchResults.map((t) => (
+                                                <button
+                                                    type="button"
+                                                    key={t.id}
+                                                    className="w-full flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted transition-colors text-left"
+                                                    onClick={() => {
+                                                        addLink.mutate(
+                                                            { targetTaskId: t.id, linkType: newLinkType },
+                                                            {
+                                                                onSuccess: () => {
+                                                                    setIsAddingLink(false);
+                                                                    setLinkSearch("");
+                                                                },
+                                                            }
+                                                        );
+                                                    }}
+                                                    disabled={addLink.isPending}
+                                                >
+                                                    <Badge variant="outline" className={cn("shrink-0 text-[10px] px-1 py-0", priorityConfig[t.priority as keyof typeof priorityConfig]?.className)}>
+                                                        {t.priority[0].toUpperCase()}
+                                                    </Badge>
+                                                    <span className={cn("flex-1 truncate", t.is_done && "line-through text-muted-foreground")}>
+                                                        {t.title}
+                                                    </span>
+                                                    <span className="shrink-0 text-xs text-muted-foreground">{t.column_name}</span>
+                                                    {addLink.isPending && <Loader2 className="h-3 w-3 animate-spin shrink-0" />}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {!isSearching && linkSearchQuery.trim() && searchResults.length === 0 && (
+                                        <p className="text-xs text-muted-foreground text-center py-2">No matching cards found</p>
+                                    )}
+
+                                    <div className="flex justify-end">
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => { setIsAddingLink(false); setLinkSearch(""); }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start text-muted-foreground"
+                                    onClick={() => setIsAddingLink(true)}
+                                >
+                                    <Plus className="mr-2 h-4 w-4" /> Add a link
+                                </Button>
+                            )}
                         </div>
 
                         {/* Checklist */}
