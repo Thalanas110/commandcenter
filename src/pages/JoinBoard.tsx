@@ -48,9 +48,8 @@ export default function JoinBoardPage() {
                 } else {
                     setError(data?.message || "Failed to join board.");
                 }
-            } catch (err: any) {
-                console.error("Error joining board:", err);
-                setError(err.message || "An unexpected error occurred.");
+            } catch (err: unknown) {
+                setError(err instanceof Error ? err.message : "An unexpected error occurred.");
             } finally {
                 setLoading(false);
             }

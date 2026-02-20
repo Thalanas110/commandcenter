@@ -1,6 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { BoardMember, BoardInvite } from "@/hooks/useBoardSharing";
 
+type BoardShareRow = {
+  shared_with_user_id: string;
+  permission: "viewer" | "editor";
+  created_at: string;
+  profiles: { display_name: string | null; avatar_url: string | null } | null;
+};
+
 export const boardSharingService = {
   async getMembersByBoard(boardId: string): Promise<BoardMember[]> {
     const { data, error } = await supabase
@@ -17,7 +24,8 @@ export const boardSharingService = {
       .eq("board_id", boardId);
     if (error) throw error;
 
-    return (data ?? []).map((item: any) => ({
+    const rows = (data ?? []) as unknown[];
+    return (rows as BoardShareRow[]).map((item) => ({
       user_id: item.shared_with_user_id,
       display_name: item.profiles?.display_name || "Unknown User",
       avatar_url: item.profiles?.avatar_url,

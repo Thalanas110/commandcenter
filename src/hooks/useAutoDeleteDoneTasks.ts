@@ -76,9 +76,6 @@ export function useAutoDeleteDoneTasks(
         const thresholdMs = category.auto_delete_after_weeks * 7 * 24 * 60 * 60 * 1000;
 
         if (now - doneMs >= thresholdMs) {
-            console.log(
-                `[AutoDelete] Task "${task.id}" has been done for >${category.auto_delete_after_weeks}w — deleting.`
-            );
             deleteTask.mutate(task.id);
         }
     }

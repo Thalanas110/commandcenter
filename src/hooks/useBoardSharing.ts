@@ -54,8 +54,7 @@ export const useBoardSharing = (boardId: string) => {
                 description: "A new invite link has been generated.",
             });
         },
-        onError: (error) => {
-            console.error('Error creating invite:', error);
+        onError: () => {
             toast({
                 title: "Error",
                 description: "Failed to create invite.",
@@ -75,8 +74,7 @@ export const useBoardSharing = (boardId: string) => {
                 description: "The user has been removed from the board.",
             });
         },
-        onError: (error) => {
-            console.error('Error removing member:', error);
+        onError: () => {
             toast({
                 title: "Error",
                 description: "Failed to remove member.",
@@ -96,8 +94,7 @@ export const useBoardSharing = (boardId: string) => {
                 description: `Member role updated to ${variables.newRole}.`,
             });
         },
-        onError: (error) => {
-            console.error('Error updating member role:', error);
+        onError: () => {
             toast({
                 title: "Error",
                 description: "Failed to update member role.",

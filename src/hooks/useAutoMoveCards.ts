@@ -59,7 +59,6 @@ export function useAutoMoveCards(
     }
 
     hasRun.current = true;
-    console.log("Running auto-move check with", tasks.length, "tasks and", columns.length, "columns");
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -77,11 +76,8 @@ export function useAutoMoveCards(
                 // Skip if already in "On Hold"
                 if (currentName === "on hold") continue;
 
-                console.log(`Found overdue task "${task.id}" in column "${currentCol?.name}". Looking for 'On Hold'...`);
-
                 const onHoldCol = findSiblingColumn(task, columns, "on hold");
                 if (onHoldCol) {
-                    console.log(`Moving task "${task.id}" to column "${onHoldCol.name}" (${onHoldCol.id})`);
                     const tasksInTarget = allTasks.filter(
                         (t) => t.column_id === onHoldCol.id
                     );
@@ -90,8 +86,6 @@ export function useAutoMoveCards(
                         newColumnId: onHoldCol.id,
                         newOrderIndex: tasksInTarget.length,
                     });
-                } else {
-                    console.warn(`Could not find 'On Hold' column for task "${task.id}" (category: ${currentCol?.category_id || 'uncategorized'})`);
                 }
             }
         }
@@ -104,11 +98,8 @@ export function useAutoMoveCards(
             // Skip if already in "Done"
             if (currentName === "done") continue;
 
-            console.log(`Found completed task "${task.id}" in column "${currentCol?.name}". Looking for 'Done'...`);
-
             const doneCol = findSiblingColumn(task, columns, "done");
             if (doneCol) {
-                console.log(`Moving task "${task.id}" to column "${doneCol.name}" (${doneCol.id})`);
                 const tasksInTarget = allTasks.filter(
                     (t) => t.column_id === doneCol.id
                 );
@@ -117,8 +108,6 @@ export function useAutoMoveCards(
                     newColumnId: doneCol.id,
                     newOrderIndex: tasksInTarget.length,
                 });
-            } else {
-                console.warn(`Could not find 'Done' column for task "${task.id}" (category: ${currentCol?.category_id || 'uncategorized'})`);
             }
         }
     }
