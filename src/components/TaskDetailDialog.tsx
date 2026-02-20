@@ -234,14 +234,14 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                     </DialogHeader>
 
                     <div className="space-y-4">
-                        {/* Done status + Priority & Due Date row */}
-                        <div className="flex flex-wrap items-center gap-2">
-                            {/* Mark as Done / Undo Done button */}
+                        {/* Row 1: Mark Done + Priority */}
+                        <div className="flex items-center gap-2">
                             {(onMarkDone || onMarkUndone) && (
                                 <Button
                                     variant={task.is_done ? "default" : "outline"}
                                     size="sm"
                                     className={cn(
+                                        "shrink-0",
                                         task.is_done && "bg-priority-low hover:bg-priority-low/90"
                                     )}
                                     onClick={() => {
@@ -259,9 +259,8 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                     )}
                                 </Button>
                             )}
-
-                            <div className="flex items-center gap-2">
-                                <Flag className="h-4 w-4 text-muted-foreground" />
+                            <div className="ml-auto flex items-center gap-1.5">
+                                <Flag className="h-4 w-4 shrink-0 text-muted-foreground" />
                                 <Select
                                     value={task.priority}
                                     onValueChange={(val) => onUpdate({ priority: val })}
@@ -280,27 +279,28 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
 
-                            <div className="flex items-center gap-2">
-                                <CalendarDays className={cn(
-                                    "h-4 w-4",
-                                    isOverdue ? "text-destructive" : "text-muted-foreground"
-                                )} />
-                                <Input
-                                    type="date"
-                                    value={task.due_date ?? ""}
-                                    onChange={(e) => onUpdate({ due_date: e.target.value || null })}
-                                    className={cn(
-                                        "h-8 w-36 sm:w-40",
-                                        isOverdue && "border-destructive text-destructive"
-                                    )}
-                                />
-                                {isOverdue && (
-                                    <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/30">
-                                        Overdue
-                                    </Badge>
+                        {/* Row 2: Due date */}
+                        <div className="flex items-center gap-2">
+                            <CalendarDays className={cn(
+                                "h-4 w-4 shrink-0",
+                                isOverdue ? "text-destructive" : "text-muted-foreground"
+                            )} />
+                            <Input
+                                type="date"
+                                value={task.due_date ?? ""}
+                                onChange={(e) => onUpdate({ due_date: e.target.value || null })}
+                                className={cn(
+                                    "h-8 flex-1 min-w-0",
+                                    isOverdue && "border-destructive text-destructive"
                                 )}
-                            </div>
+                            />
+                            {isOverdue && (
+                                <Badge variant="outline" className="shrink-0 text-[10px] bg-destructive/10 text-destructive border-destructive/30">
+                                    Overdue
+                                </Badge>
+                            )}
                         </div>
 
                         {/* Assignee */}
