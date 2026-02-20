@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   DndContext,
@@ -122,6 +122,23 @@ export default function BoardViewPage() {
       ? columns.find((c) => c.id === activeId)
       : undefined;
   const bgFileInputRef = useRef<HTMLInputElement>(null);
+  const boardScrollRef = useRef<HTMLDivElement>(null);
+
+  // On desktop, redirect vertical wheel scroll to horizontal so users can
+  // scroll through columns with a normal mouse wheel.
+  useEffect(() => {
+    const el = boardScrollRef.current;
+    if (!el) return;
+    const handleWheel = (e: WheelEvent) => {
+      // Shift+scroll → horizontal; plain scroll → vertical (default)
+      if (e.shiftKey && e.deltaY !== 0) {
+        el.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    };
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, []);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<
@@ -387,6 +404,7 @@ export default function BoardViewPage() {
       </div>
 
       <div
+        ref={boardScrollRef}
         className="relative min-h-0 flex-1 overflow-x-auto overflow-y-auto p-2 sm:p-4"
       >
         <div className="relative">
