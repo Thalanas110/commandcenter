@@ -75,9 +75,8 @@ export function useTasks(boardId: string | undefined) {
   const updateTask = useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<CreateTaskInput>) => {
       await taskService.updateTask(id, updates as Record<string, unknown>);
-      if (user) {
-        await adminService.logActivity(user.id, "updated", "task", id, updates as Record<string, unknown>);
-      }
+      // NOTE: "updated" events are intentionally NOT logged to avoid flooding activity_logs.
+      // Only significant lifecycle events (created, deleted, marked_done) are logged.
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
