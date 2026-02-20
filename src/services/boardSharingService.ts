@@ -36,16 +36,18 @@ export const boardSharingService = {
   },
 
   async getInvitesByBoard(boardId: string): Promise<BoardInvite[]> {
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from("board_invites")
       .select("*")
       .eq("board_id", boardId);
     if (error) throw error;
-    return data as BoardInvite[];
+    return (data ?? []) as BoardInvite[];
   },
 
   async createInvite(boardId: string, role: "viewer" | "editor" = "viewer") {
-    const { data, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
       .from("board_invites")
       .insert({ board_id: boardId, role })
       .select()
