@@ -12,6 +12,7 @@ import { useChecklists } from "@/hooks/useChecklists";
 import { useTaskAttachments, TaskAttachment } from "@/hooks/useTaskAttachments";
 import { useBoardSharing } from "@/hooks/useBoardSharing";
 import { useLabels } from "@/hooks/useLabels";
+import { useProfile } from "@/hooks/useProfile";
 import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound, ImageIcon, Tag, MessageSquare, Send, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/authService";
@@ -71,11 +72,31 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
     const { members } = useBoardSharing(boardId);
     const { labels: boardLabels, toggleTaskLabel } = useLabels(boardId);
     const { comments, isLoading: isLoadingComments, addComment, deleteComment, editComment } = useTaskComments(task.id);
+    const { profile: currentProfile } = useProfile();
 
     // Fetch current user id once on mount
     useEffect(() => {
         authService.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
     }, []);
+
+    // Build assignable list: always include the current user at the top,
+    // followed by other board members (deduplicated).
+    const assignableMembers = (() => {
+        const list: Array<{ user_id: string; display_name: string | null; avatar_url: string | null }> = [];
+        if (currentUserId && currentProfile) {
+            list.push({
+                user_id: currentUserId,
+                display_name: currentProfile.display_name ?? null,
+                avatar_url: currentProfile.avatar_url ?? null,
+            });
+        }
+        for (const m of members) {
+            if (m.user_id !== currentUserId) {
+                list.push({ user_id: m.user_id, display_name: m.display_name, avatar_url: m.avatar_url });
+            }
+        }
+        return list;
+    })();
 
     const appliedLabelIds = new Set((task.task_labels ?? []).map((tl) => tl.label_id));
 
@@ -356,7 +377,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                             Unassigned
                                         </span>
                                     </SelectItem>
-                                    {members.map((m) => (
+                                    {assignableMembers.map((m) => (
                                         <SelectItem key={m.user_id} value={m.user_id}>
                                             <span className="flex items-center gap-2">
                                                 <Avatar className="h-5 w-5">
@@ -366,6 +387,9 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 {m.display_name ?? "Unknown"}
+                                                {m.user_id === currentUserId && (
+                                                    <span className="ml-1 text-[10px] text-muted-foreground">(You)</span>
+                                                )}
                                             </span>
                                         </SelectItem>
                                     ))}
