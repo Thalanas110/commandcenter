@@ -34,6 +34,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -43,6 +44,7 @@ import {
   ImageOff,
   Wallpaper,
   Tags,
+  MoreHorizontal,
 } from "lucide-react";
 import { useBoards } from "@/hooks/useBoards";
 import { useBoardSharing } from "@/hooks/useBoardSharing";
@@ -250,24 +252,31 @@ export default function BoardViewPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <AppHeader />
       <div
-        className={`border-b px-4 py-3 ${backgroundUrl ? "bg-card/80 backdrop-blur-sm" : "bg-card"}`}
+        className={`border-b ${backgroundUrl ? "bg-card/80 backdrop-blur-sm" : "bg-card"}`}
       >
-        <div className="container flex items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
+        <div className="container flex h-12 items-center gap-2 sm:gap-3">
+          {/* Back button */}
+          <Button variant="ghost" size="icon" className="shrink-0" asChild>
             <Link to="/">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
-          <h1 className="text-xl font-bold">{board?.name ?? "Board"}</h1>
-          <div className="ml-auto flex items-center gap-2">
-            {/* Member Avatars */}
-            {boardId && <BoardMembersList boardId={boardId} />}
 
-            {/* Share button */}
-            {/* Share button */}
+          {/* Board title */}
+          <h1 className="min-w-0 flex-1 truncate text-base font-bold sm:flex-none sm:text-xl">
+            {board?.name ?? "Board"}
+          </h1>
+
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            {/* Member Avatars — hide on very small screens */}
+            <div className="hidden sm:flex">
+              {boardId && <BoardMembersList boardId={boardId} />}
+            </div>
+
+            {/* Share button — always visible */}
             {boardId && <BoardShareDialog boardId={boardId} />}
 
-            {/* Background image controls */}
+            {/* Hidden file input for background */}
             <input
               ref={bgFileInputRef}
               type="file"
@@ -275,70 +284,106 @@ export default function BoardViewPage() {
               className="hidden"
               onChange={handleBgFileChange}
             />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Wallpaper className="mr-1 h-4 w-4" /> Background
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => bgFileInputRef.current?.click()}
-                >
-                  <ImagePlus className="mr-2 h-3.5 w-3.5" /> Set Background
-                </DropdownMenuItem>
-                {backgroundUrl && (
-                  <DropdownMenuItem
-                    onClick={() =>
-                      boardId &&
-                      removeBoardBackground.mutate({
-                        boardId,
-                        currentUrl: backgroundUrl,
-                      })
-                    }
-                  >
-                    <ImageOff className="mr-2 h-3.5 w-3.5" /> Remove Background
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
 
-            {/* Labels button */}
-            {boardId && (
+            {/* ── Desktop action bar (md+) ── */}
+            <div className="hidden md:flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Wallpaper className="mr-1 h-4 w-4" /> Background
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => bgFileInputRef.current?.click()}>
+                    <ImagePlus className="mr-2 h-3.5 w-3.5" /> Set Background
+                  </DropdownMenuItem>
+                  {backgroundUrl && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        boardId &&
+                        removeBoardBackground.mutate({ boardId, currentUrl: backgroundUrl })
+                      }
+                    >
+                      <ImageOff className="mr-2 h-3.5 w-3.5" /> Remove Background
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {boardId && (
+                <Button variant="outline" size="sm" onClick={() => setLabelDialogOpen(true)}>
+                  <Tags className="mr-1 h-4 w-4" /> Labels
+                </Button>
+              )}
+
+              <Button variant="outline" size="sm" onClick={() => setCategoryDialogOpen(true)}>
+                <Tags className="mr-1 h-4 w-4" /> Categories
+              </Button>
+
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setLabelDialogOpen(true)}
+                onClick={() => boardId && createColumn.mutate({ name: "New Column", boardId })}
               >
-                <Tags className="mr-1 h-4 w-4" /> Labels
+                <Plus className="mr-1 h-4 w-4" /> Add Column
               </Button>
-            )}
+            </div>
 
-            {/* Categories button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCategoryDialogOpen(true)}
-            >
-              <Tags className="mr-1 h-4 w-4" /> Categories
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                boardId &&
-                createColumn.mutate({ name: "New Column", boardId })
-              }
-            >
-              <Plus className="mr-1 h-4 w-4" /> Add Column
-            </Button>
+            {/* ── Mobile overflow menu (hidden on md+) ── */}
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => bgFileInputRef.current?.click()}>
+                    <ImagePlus className="mr-2 h-4 w-4" /> Set Background
+                  </DropdownMenuItem>
+                  {backgroundUrl && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        boardId &&
+                        removeBoardBackground.mutate({ boardId, currentUrl: backgroundUrl })
+                      }
+                    >
+                      <ImageOff className="mr-2 h-4 w-4" /> Remove Background
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  {boardId && (
+                    <DropdownMenuItem onClick={() => setLabelDialogOpen(true)}>
+                      <Tags className="mr-2 h-4 w-4" /> Labels
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => setCategoryDialogOpen(true)}>
+                    <Tags className="mr-2 h-4 w-4" /> Categories
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => boardId && createColumn.mutate({ name: "New Column", boardId })}
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Add Column
+                  </DropdownMenuItem>
+                  {/* Member avatars shown in mobile menu header */}
+                  {boardId && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-1">
+                        <BoardMembersList boardId={boardId} />
+                      </div>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>
 
       <div
-        className="relative flex-1 overflow-x-auto p-4"
+        className="relative flex-1 overflow-x-auto p-2 sm:p-4"
         style={boardAreaStyle}
       >
         {/* Dark overlay for readability when background image is set */}
@@ -365,7 +410,7 @@ export default function BoardViewPage() {
                 items={columns.map((c) => c.id)}
                 strategy={horizontalListSortingStrategy}
               >
-                <div className="space-y-4">
+                <div className="space-y-2 sm:space-y-4">
                   {groupedColumns.map((group) => {
                     const isCollapsed = group.category
                       ? collapsedCategories[group.category.id] ?? false
@@ -420,7 +465,7 @@ export default function BoardViewPage() {
 
                         {/* Columns row */}
                         {!isCollapsed && (
-                          <div className="flex gap-4">
+                          <div className="flex gap-2 sm:gap-4">
                             {group.columns.map((column) => (
                               <KanbanColumn
                                 key={column.id}

@@ -134,7 +134,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto p-0">
+            <DialogContent className="max-w-xl max-h-[90dvh] overflow-y-auto p-0">
                 {/* Cover image area */}
                 {task.cover_image_url ? (
                     <div className="relative h-36 w-full overflow-hidden rounded-t-lg">

@@ -93,7 +93,7 @@ export function KanbanColumn({ boardId, column, tasks, onRename, onDelete, onCre
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex w-72 shrink-0 flex-col rounded-lg bg-kanban-column transition-colors ${isOver ? "ring-2 ring-primary/50" : ""
+      className={`flex w-64 shrink-0 flex-col rounded-lg bg-kanban-column transition-colors sm:w-72 ${isOver ? "ring-2 ring-primary/50" : ""
         }`}
     >
       {/* Cover image */}

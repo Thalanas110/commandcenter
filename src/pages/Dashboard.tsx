@@ -14,11 +14,11 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="container py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Your Boards</h1>
-            <p className="mt-1 text-muted-foreground">Manage and organize your projects</p>
+      <main className="container py-4 sm:py-8">
+        <div className="mb-4 flex items-center justify-between gap-4 sm:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Your Boards</h1>
+            <p className="mt-1 text-sm text-muted-foreground sm:text-base">Manage and organize your projects</p>
           </div>
           <Button onClick={() => setCreateOpen(true)}>
             <Plus className="mr-1 h-4 w-4" />

@@ -34,18 +34,18 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-sm">
-      <div className="container flex h-14 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-          <LayoutDashboard className="h-5 w-5 text-primary" />
-          <span>KanbanFlow</span>
+      <div className="container flex h-14 items-center justify-between gap-2">
+        <Link to="/" className="flex min-w-0 shrink-0 items-center gap-2 font-bold text-lg">
+          <LayoutDashboard className="h-5 w-5 shrink-0 text-primary" />
+          <span className="hidden sm:inline">KanbanFlow</span>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {isAdmin && (
             <Button variant="ghost" size="sm" asChild>
               <Link to="/admin">
-                <Shield className="mr-1 h-4 w-4" />
-                Admin
+                <Shield className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Admin</span>
               </Link>
             </Button>
           )}
@@ -62,10 +62,10 @@ export function AppHeader() {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5 text-sm">
-                <p className="font-medium">{profile?.display_name ?? "User"}</p>
-                <p className="text-muted-foreground text-xs">{user?.email}</p>
+                <p className="truncate font-medium">{profile?.display_name ?? "User"}</p>
+                <p className="truncate text-muted-foreground text-xs">{user?.email}</p>
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
