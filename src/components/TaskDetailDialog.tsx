@@ -137,7 +137,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
             <DialogContent className="max-w-xl max-h-[90dvh] overflow-y-auto p-0">
                 {/* Cover image area */}
                 {task.cover_image_url ? (
-                    <div className="relative h-36 w-full overflow-hidden rounded-t-lg">
+                    <div className="relative h-36 w-full min-w-0 overflow-hidden rounded-t-lg">
                         <img
                             src={task.cover_image_url}
                             alt="Card cover"
@@ -178,7 +178,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                         </div>
                     </div>
                 ) : (
-                    <div className="relative flex items-center justify-center h-16 border-b bg-muted/30">
+                    <div className="relative flex min-w-0 items-center justify-center h-16 border-b bg-muted/30 overflow-hidden">
                         <input
                             ref={coverInputRef}
                             type="file"
@@ -202,7 +202,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                     </div>
                 )}
 
-                <div className="px-6 pt-4 pb-6">
+                <div className="min-w-0 overflow-hidden px-4 pt-3 pb-5 sm:px-6 sm:pt-4 sm:pb-6">
                     <DialogHeader>
                         <DialogTitle className="sr-only">Task Details</DialogTitle>
                         <DialogDescription className="sr-only">Edit the task title, description, priority, due date, and checklist items.</DialogDescription>
@@ -224,7 +224,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                     setIsEditingTitle(true);
                                 }}
                                 className={cn(
-                                    "w-full text-left text-lg font-semibold hover:bg-muted/50 rounded px-1 py-0.5 transition-colors",
+                                    "w-full break-words text-left text-lg font-semibold hover:bg-muted/50 rounded px-1 py-0.5 transition-colors",
                                     task.is_done && "line-through text-muted-foreground"
                                 )}
                             >
@@ -233,9 +233,9 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                         )}
                     </DialogHeader>
 
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                         {/* Done status + Priority & Due Date row */}
-                        <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2">
                             {/* Mark as Done / Undo Done button */}
                             {(onMarkDone || onMarkUndone) && (
                                 <Button
@@ -291,7 +291,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                     value={task.due_date ?? ""}
                                     onChange={(e) => onUpdate({ due_date: e.target.value || null })}
                                     className={cn(
-                                        "h-8 w-40",
+                                        "h-8 w-36 sm:w-40",
                                         isOverdue && "border-destructive text-destructive"
                                     )}
                                 />
@@ -479,7 +479,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                                 <a href={publicUrl} download={file.file_name} target="_blank" rel="noopener noreferrer">
                                                     <Button variant="ghost" size="icon" className="h-8 w-8">
                                                         <Download className="h-4 w-4" />
@@ -554,7 +554,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="h-6 w-6 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                                             onClick={() => deleteItem.mutate(item.id)}
                                         >
                                             <X className="h-3 w-3" />
@@ -616,21 +616,21 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                     const isOwn = comment.user_id === currentUserId;
                                     return (
                                         <div key={comment.id} className="group rounded-lg border bg-muted/30 p-3 space-y-2">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <div className="flex items-center gap-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex min-w-0 items-center gap-1.5">
                                                     <Avatar className="h-6 w-6 shrink-0">
                                                         <AvatarImage src={comment.profile?.avatar_url ?? ""} />
                                                         <AvatarFallback className="text-[9px]">
                                                             {comment.profile?.display_name?.slice(0, 2).toUpperCase() ?? "?"}
                                                         </AvatarFallback>
                                                     </Avatar>
-                                                    <span className="text-xs font-medium">
+                                                    <span className="truncate text-xs font-medium">
                                                         {comment.profile?.display_name ?? "Member"}
                                                     </span>
                                                     <Badge
                                                         variant="outline"
                                                         className={cn(
-                                                            "text-[10px] px-1.5 py-0",
+                                                            "shrink-0 text-[10px] px-1.5 py-0",
                                                             comment.category === "TASK_UPDATES" && "bg-blue-500/10 text-blue-600 border-blue-500/30",
                                                             comment.category === "QUESTIONS" && "bg-amber-500/10 text-amber-600 border-amber-500/30",
                                                             comment.category === "GENERAL_COMMENTS" && "bg-muted text-muted-foreground border-border"
@@ -639,15 +639,15 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                                         {catConfig?.label ?? comment.category}
                                                     </Badge>
                                                 </div>
-                                                <div className="flex items-center gap-1">
-                                                    <span className="text-[10px] text-muted-foreground">
+                                                <div className="flex shrink-0 items-center gap-0.5">
+                                                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                                                         {new Date(comment.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                                                     </span>
                                                     {isOwn && !isEditing && (
                                                         <>
                                                             <button
                                                                 type="button"
-                                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted"
+                                                                className="p-1 rounded hover:bg-muted sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                                                                 onClick={() => {
                                                                     setEditingCommentId(comment.id);
                                                                     setEditCommentContent(comment.content);
@@ -659,7 +659,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                                             </button>
                                                             <button
                                                                 type="button"
-                                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10"
+                                                                className="p-1 rounded hover:bg-destructive/10 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                                                                 onClick={() => deleteComment.mutate(comment.id)}
                                                                 aria-label="Delete comment"
                                                             >
@@ -717,7 +717,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                                                <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
                                             )}
                                         </div>
                                     );
