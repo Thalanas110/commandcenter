@@ -245,6 +245,44 @@ export type Database = {
           },
         ]
       }
+      task_comments: {
+        Row: {
+          id: string
+          task_id: string
+          user_id: string
+          content: string
+          category: Database["public"]["Enums"]["comment_category"]
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          task_id: string
+          user_id: string
+          content: string
+          category?: Database["public"]["Enums"]["comment_category"]
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          task_id?: string
+          user_id?: string
+          content?: string
+          category?: Database["public"]["Enums"]["comment_category"]
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           column_id: string
@@ -322,6 +360,7 @@ export type Database = {
     }
     Enums: {
       app_role: "user" | "admin"
+      comment_category: "TASK_UPDATES" | "QUESTIONS" | "GENERAL_COMMENTS"
       task_priority: "low" | "medium" | "high"
     }
     CompositeTypes: {
@@ -451,6 +490,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["user", "admin"],
+      comment_category: ["TASK_UPDATES", "QUESTIONS", "GENERAL_COMMENTS"],
       task_priority: ["low", "medium", "high"],
     },
   },

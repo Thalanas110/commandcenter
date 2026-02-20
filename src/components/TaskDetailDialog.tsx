@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,9 +12,10 @@ import { useChecklists } from "@/hooks/useChecklists";
 import { useTaskAttachments, TaskAttachment } from "@/hooks/useTaskAttachments";
 import { useBoardSharing } from "@/hooks/useBoardSharing";
 import { useLabels } from "@/hooks/useLabels";
-import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound, ImageIcon, Tag } from "lucide-react";
+import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound, ImageIcon, Tag, MessageSquare, Send, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useTaskComments, COMMENT_CATEGORIES, CommentCategory } from "@/hooks/useTaskComments";
 
 const priorityConfig = {
     low: { label: "Low", className: "bg-priority-low/15 text-priority-low border-priority-low/30" },
@@ -54,10 +55,24 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
     const [isUploadingCover, setIsUploadingCover] = useState(false);
     const coverInputRef = useRef<HTMLInputElement>(null);
 
+    // Comments state
+    const [newCommentContent, setNewCommentContent] = useState("");
+    const [newCommentCategory, setNewCommentCategory] = useState<CommentCategory>("GENERAL_COMMENTS");
+    const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+    const [editCommentContent, setEditCommentContent] = useState("");
+    const [editCommentCategory, setEditCommentCategory] = useState<CommentCategory>("GENERAL_COMMENTS");
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
     const { items: checklistItems, createItem, updateItem, deleteItem } = useChecklists(task.id);
     const { attachments, uploadAttachment, deleteAttachment, isLoading: isLoadingAttachments } = useTaskAttachments(task.id);
     const { members } = useBoardSharing(boardId);
     const { labels: boardLabels, toggleTaskLabel } = useLabels(boardId);
+    const { comments, isLoading: isLoadingComments, addComment, deleteComment, editComment } = useTaskComments(task.id);
+
+    // Fetch current user id once on mount
+    useEffect(() => {
+        supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+    }, []);
 
     const appliedLabelIds = new Set((task.task_labels ?? []).map((tl) => tl.label_id));
 
@@ -581,6 +596,201 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
                                     <Plus className="mr-1 h-4 w-4" /> Add an item
                                 </Button>
                             )}
+                        </div>
+
+                        {/* Comments */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                                <MessageSquare className="h-4 w-4" />
+                                Comments
+                                {comments.length > 0 && (
+                                    <span className="ml-auto text-xs">{comments.length}</span>
+                                )}
+                            </div>
+
+                            {/* Existing comments */}
+                            <div className="space-y-3">
+                                {isLoadingComments && (
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <Loader2 className="h-3 w-3 animate-spin" /> Loading comments...
+                                    </div>
+                                )}
+                                {comments.map((comment) => {
+                                    const catConfig = COMMENT_CATEGORIES.find((c) => c.value === comment.category);
+                                    const isEditing = editingCommentId === comment.id;
+                                    const isOwn = comment.user_id === currentUserId;
+                                    return (
+                                        <div key={comment.id} className="group rounded-lg border bg-muted/30 p-3 space-y-2">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <Avatar className="h-6 w-6 shrink-0">
+                                                        <AvatarImage src={comment.profile?.avatar_url ?? ""} />
+                                                        <AvatarFallback className="text-[9px]">
+                                                            {comment.profile?.display_name?.slice(0, 2).toUpperCase() ?? "?"}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="text-xs font-medium">
+                                                        {comment.profile?.display_name ?? "Member"}
+                                                    </span>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "text-[10px] px-1.5 py-0",
+                                                            comment.category === "TASK_UPDATES" && "bg-blue-500/10 text-blue-600 border-blue-500/30",
+                                                            comment.category === "QUESTIONS" && "bg-amber-500/10 text-amber-600 border-amber-500/30",
+                                                            comment.category === "GENERAL_COMMENTS" && "bg-muted text-muted-foreground border-border"
+                                                        )}
+                                                    >
+                                                        {catConfig?.label ?? comment.category}
+                                                    </Badge>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[10px] text-muted-foreground">
+                                                        {new Date(comment.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                                    </span>
+                                                    {isOwn && !isEditing && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted"
+                                                                onClick={() => {
+                                                                    setEditingCommentId(comment.id);
+                                                                    setEditCommentContent(comment.content);
+                                                                    setEditCommentCategory(comment.category);
+                                                                }}
+                                                                aria-label="Edit comment"
+                                                            >
+                                                                <Pencil className="h-3 w-3 text-muted-foreground" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10"
+                                                                onClick={() => deleteComment.mutate(comment.id)}
+                                                                aria-label="Delete comment"
+                                                            >
+                                                                <Trash2 className="h-3 w-3 text-destructive" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {isEditing ? (
+                                                <div className="space-y-2">
+                                                    <Select
+                                                        value={editCommentCategory}
+                                                        onValueChange={(v) => setEditCommentCategory(v as CommentCategory)}
+                                                    >
+                                                        <SelectTrigger className="h-7 text-xs">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {COMMENT_CATEGORIES.map((cat) => (
+                                                                <SelectItem key={cat.value} value={cat.value}>
+                                                                    <span className="text-xs">{cat.label}</span>
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Textarea
+                                                        value={editCommentContent}
+                                                        onChange={(e) => setEditCommentContent(e.target.value)}
+                                                        className="min-h-[60px] text-sm resize-none"
+                                                        autoFocus
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            disabled={editComment.isPending || !editCommentContent.trim()}
+                                                            onClick={() => {
+                                                                if (!editCommentContent.trim()) return;
+                                                                editComment.mutate(
+                                                                    { id: comment.id, content: editCommentContent.trim(), category: editCommentCategory },
+                                                                    { onSuccess: () => setEditingCommentId(null) }
+                                                                );
+                                                            }}
+                                                        >
+                                                            {editComment.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                                            Save
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => setEditingCommentId(null)}
+                                                        >
+                                                            Cancel
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Add new comment */}
+                            <div className="space-y-2 rounded-lg border p-3 bg-muted/20">
+                                <div className="flex items-center gap-2">
+                                    <MessageSquare className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                    <Select
+                                        value={newCommentCategory}
+                                        onValueChange={(v) => setNewCommentCategory(v as CommentCategory)}
+                                    >
+                                        <SelectTrigger className="h-7 flex-1 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {COMMENT_CATEGORIES.map((cat) => (
+                                                <SelectItem key={cat.value} value={cat.value}>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-medium">{cat.label}</span>
+                                                        <span className="text-[10px] text-muted-foreground">{cat.description}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <Textarea
+                                    value={newCommentContent}
+                                    onChange={(e) => setNewCommentContent(e.target.value)}
+                                    placeholder="Add a comment..."
+                                    className="min-h-[70px] resize-none text-sm"
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                                            e.preventDefault();
+                                            if (newCommentContent.trim()) {
+                                                addComment.mutate(
+                                                    { content: newCommentContent.trim(), category: newCommentCategory },
+                                                    { onSuccess: () => setNewCommentContent("") }
+                                                );
+                                            }
+                                        }
+                                    }}
+                                />
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-muted-foreground">Ctrl+Enter to send</span>
+                                    <Button
+                                        size="sm"
+                                        disabled={addComment.isPending || !newCommentContent.trim()}
+                                        onClick={() => {
+                                            if (!newCommentContent.trim()) return;
+                                            addComment.mutate(
+                                                { content: newCommentContent.trim(), category: newCommentCategory },
+                                                { onSuccess: () => setNewCommentContent("") }
+                                            );
+                                        }}
+                                    >
+                                        {addComment.isPending ? (
+                                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                        ) : (
+                                            <Send className="h-3 w-3 mr-1" />
+                                        )}
+                                        Comment
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Delete */}
