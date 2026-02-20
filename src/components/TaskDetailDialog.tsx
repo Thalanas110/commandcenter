@@ -14,7 +14,9 @@ import { useBoardSharing } from "@/hooks/useBoardSharing";
 import { useLabels } from "@/hooks/useLabels";
 import { Calendar, Trash2, Plus, X, CheckSquare, AlignLeft, Flag, CalendarDays, CircleCheck, CircleDashed, Paperclip, FileIcon, Download, Loader2, UserRound, ImageIcon, Tag, MessageSquare, Send, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
+import { authService } from "@/services/authService";
+import { taskService } from "@/services/taskService";
+import { attachmentService } from "@/services/attachmentService";
 import { useTaskComments, COMMENT_CATEGORIES, CommentCategory } from "@/hooks/useTaskComments";
 
 const priorityConfig = {
@@ -71,7 +73,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
 
     // Fetch current user id once on mount
     useEffect(() => {
-        supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+        authService.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
     }, []);
 
     const appliedLabelIds = new Set((task.task_labels ?? []).map((tl) => tl.label_id));
@@ -119,15 +121,8 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
     const handleCoverUpload = useCallback(async (file: File) => {
         setIsUploadingCover(true);
         try {
-            const ext = file.name.split(".").pop();
-            const path = `${task.id}/cover.${ext}`;
-            const { error: uploadError } = await supabase.storage
-                .from("task-covers")
-                .upload(path, file, { upsert: true });
-            if (uploadError) throw uploadError;
-            const { data } = supabase.storage.from("task-covers").getPublicUrl(path);
-            // Append cache-busting so the browser picks up the new image
-            onUpdate({ cover_image_url: `${data.publicUrl}?t=${Date.now()}` });
+            const publicUrl = await taskService.uploadTaskCover(task.id, file);
+            onUpdate({ cover_image_url: publicUrl });
         } finally {
             setIsUploadingCover(false);
         }
@@ -461,7 +456,7 @@ export function TaskDetailDialog({ boardId, task, open, onOpenChange, onUpdate, 
 
                                 {attachments.map((file) => {
                                     const isImage = file.file_type.startsWith("image/");
-                                    const publicUrl = supabase.storage.from("task-attachments").getPublicUrl(file.file_path).data.publicUrl;
+                                    const publicUrl = attachmentService.getAttachmentPublicUrl(file.file_path);
 
                                     return (
                                         <div key={file.id} className="group flex items-center justify-between rounded-md border p-2 hover:bg-muted/50 transition-colors">

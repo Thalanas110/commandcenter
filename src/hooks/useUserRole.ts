@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { userRoleService } from "@/services/userRoleService";
 import { useAuth } from "./useAuth";
 
 export function useUserRole() {
@@ -9,19 +9,7 @@ export function useUserRole() {
     queryKey: ["user-roles", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      // console.log("Fetching roles for user:", user.id);
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-
-      if (error) {
-        // console.error("Error fetching roles:", error);
-        throw error;
-      }
-
-      // console.log("Fetched roles:", data);
-      return data.map((r) => r.role);
+      return userRoleService.getRolesForUser(user.id);
     },
     enabled: !!user && !authLoading,
   });

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { adminService } from "@/services/adminService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, LayoutDashboard, ListTodo, Tags } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,20 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function AdminOverviewPage() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
-    queryFn: async () => {
-      const [users, boards, tasks, labels] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("boards").select("id", { count: "exact", head: true }),
-        supabase.from("tasks").select("id", { count: "exact", head: true }),
-        supabase.from("labels").select("id", { count: "exact", head: true }),
-      ]);
-      return {
-        users: users.count ?? 0,
-        boards: boards.count ?? 0,
-        tasks: tasks.count ?? 0,
-        labels: labels.count ?? 0,
-      };
-    },
+    queryFn: () => adminService.getStats(),
   });
 
   const cards = [

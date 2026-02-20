@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { checklistService } from "@/services/checklistService";
 
 export function useChecklists(taskId: string | undefined) {
     const queryClient = useQueryClient();
@@ -8,13 +8,7 @@ export function useChecklists(taskId: string | undefined) {
         queryKey: ["checklists", taskId],
         queryFn: async () => {
             if (!taskId) return [];
-            const { data, error } = await supabase
-                .from("checklist_items")
-                .select("*")
-                .eq("task_id", taskId)
-                .order("order_index");
-            if (error) throw error;
-            return data;
+            return checklistService.getItemsByTask(taskId);
         },
         enabled: !!taskId,
     });
@@ -26,12 +20,7 @@ export function useChecklists(taskId: string | undefined) {
             const nextOrder = existing.length > 0
                 ? Math.max(...existing.map((i) => i.order_index)) + 1
                 : 0;
-            const { error } = await supabase.from("checklist_items").insert({
-                task_id: taskId,
-                title,
-                order_index: nextOrder,
-            });
-            if (error) throw error;
+            await checklistService.createItem(taskId, title, nextOrder);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["checklists", taskId] });
@@ -40,11 +29,7 @@ export function useChecklists(taskId: string | undefined) {
 
     const updateItem = useMutation({
         mutationFn: async ({ id, ...updates }: { id: string; title?: string; is_completed?: boolean }) => {
-            const { error } = await supabase
-                .from("checklist_items")
-                .update(updates)
-                .eq("id", id);
-            if (error) throw error;
+            await checklistService.updateItem(id, updates);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["checklists", taskId] });
@@ -53,11 +38,7 @@ export function useChecklists(taskId: string | undefined) {
 
     const deleteItem = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase
-                .from("checklist_items")
-                .delete()
-                .eq("id", id);
-            if (error) throw error;
+            await checklistService.deleteItem(id);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["checklists", taskId] });

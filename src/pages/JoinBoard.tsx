@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { authService } from "@/services/authService";
+import { boardSharingService } from "@/services/boardSharingService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -23,7 +24,7 @@ export default function JoinBoardPage() {
 
             try {
                 // First check if user is authenticated
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session } } = await authService.getSession();
 
                 if (!session) {
                     // If not logged in, redirect to login with return path
@@ -36,11 +37,7 @@ export default function JoinBoardPage() {
                     return;
                 }
 
-                const { data, error } = await supabase.rpc('join_board_via_token', {
-                    _token: token
-                });
-
-                if (error) throw error;
+                const data = await boardSharingService.joinBoardViaToken(token!);
 
                 if (data && data.success) {
                     toast({

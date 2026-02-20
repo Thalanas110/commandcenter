@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { boardSharingService } from '@/services/boardSharingService';
 import { useToast } from '@/hooks/use-toast';
 
 export type BoardMember = {
@@ -28,29 +28,7 @@ export const useBoardSharing = (boardId: string) => {
     const { data: members = [], isLoading: membersLoading } = useQuery({
         queryKey: ['board-members', boardId],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('board_shares')
-                .select(`
-          shared_with_user_id,
-          permission,
-          created_at,
-          profiles:shared_with_user_id (
-            display_name,
-            avatar_url
-          )
-        `)
-                .eq('board_id', boardId);
-
-            if (error) throw error;
-
-            return data.map((item: any) => ({
-                user_id: item.shared_with_user_id,
-                display_name: item.profiles?.display_name || 'Unknown User',
-                avatar_url: item.profiles?.avatar_url,
-                email: null,
-                role: item.permission as 'viewer' | 'editor',
-                joined_at: item.created_at,
-            })) as BoardMember[];
+            return boardSharingService.getMembersByBoard(boardId);
         },
         enabled: !!boardId,
     });
@@ -58,13 +36,7 @@ export const useBoardSharing = (boardId: string) => {
     const { data: invites = [], isLoading: invitesLoading } = useQuery({
         queryKey: ['board-invites', boardId],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from('board_invites')
-                .select('*')
-                .eq('board_id', boardId);
-
-            if (error) throw error;
-            return data as BoardInvite[];
+            return boardSharingService.getInvitesByBoard(boardId);
         },
         enabled: !!boardId,
     });
@@ -73,16 +45,7 @@ export const useBoardSharing = (boardId: string) => {
 
     const createInviteMutation = useMutation({
         mutationFn: async (role: 'viewer' | 'editor' = 'viewer') => {
-            const { data, error } = await supabase
-                .from('board_invites')
-                .insert({
-                    board_id: boardId,
-                    role,
-                })
-                .select()
-                .single();
-            if (error) throw error;
-            return data;
+            return boardSharingService.createInvite(boardId, role);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['board-invites', boardId] });
@@ -103,12 +66,7 @@ export const useBoardSharing = (boardId: string) => {
 
     const removeMemberMutation = useMutation({
         mutationFn: async (userId: string) => {
-            const { error } = await supabase
-                .from('board_shares')
-                .delete()
-                .eq('board_id', boardId)
-                .eq('shared_with_user_id', userId);
-            if (error) throw error;
+            await boardSharingService.removeMember(boardId, userId);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['board-members', boardId] });
@@ -129,12 +87,7 @@ export const useBoardSharing = (boardId: string) => {
 
     const updateMemberRoleMutation = useMutation({
         mutationFn: async ({ userId, newRole }: { userId: string, newRole: 'viewer' | 'editor' }) => {
-            const { error } = await supabase
-                .from('board_shares')
-                .update({ permission: newRole })
-                .eq('board_id', boardId)
-                .eq('shared_with_user_id', userId);
-            if (error) throw error;
+            await boardSharingService.updateMemberRole(boardId, userId, newRole);
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['board-members', boardId] });

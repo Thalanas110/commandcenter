@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { profileService } from "@/services/profileService";
+import { userRoleService } from "@/services/userRoleService";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,17 +13,11 @@ export default function AdminUsersPage() {
   const { data: users, isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const { data: profiles, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-
-      const { data: roles } = await supabase.from("user_roles").select("*");
-
+      const profiles = await profileService.getAllProfiles();
+      const roles = await userRoleService.getAllUserRoles();
       return profiles.map((p) => ({
         ...p,
-        roles: roles?.filter((r) => r.user_id === p.id).map((r) => r.role) ?? [],
+        roles: roles.filter((r) => r.user_id === p.id).map((r) => r.role) ?? [],
       }));
     },
   });
@@ -30,17 +25,9 @@ export default function AdminUsersPage() {
   const toggleAdmin = useMutation({
     mutationFn: async ({ userId, isCurrentlyAdmin }: { userId: string; isCurrentlyAdmin: boolean }) => {
       if (isCurrentlyAdmin) {
-        const { error } = await supabase
-          .from("user_roles")
-          .delete()
-          .eq("user_id", userId)
-          .eq("role", "admin");
-        if (error) throw error;
+        await userRoleService.revokeAdmin(userId);
       } else {
-        const { error } = await supabase
-          .from("user_roles")
-          .insert({ user_id: userId, role: "admin" });
-        if (error) throw error;
+        await userRoleService.grantAdmin(userId);
       }
     },
     onSuccess: () => {

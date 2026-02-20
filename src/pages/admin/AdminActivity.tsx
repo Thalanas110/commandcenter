@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { adminService } from "@/services/adminService";
 import { useRealtimeActivityLogs } from "@/hooks/useRealtime";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,15 +10,7 @@ export default function AdminActivityPage() {
 
   const { data: logs, isLoading } = useQuery({
     queryKey: ["activity-logs"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("activity_logs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => adminService.getActivityLogs(100),
   });
 
   return (

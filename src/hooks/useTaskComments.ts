@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { commentService } from "@/services/commentService";
+import { authService } from "@/services/authService";
 
 export type CommentCategory = "TASK_UPDATES" | "QUESTIONS" | "GENERAL_COMMENTS";
 
@@ -34,13 +35,7 @@ export function useTaskComments(taskId: string | undefined) {
         queryKey: ["task_comments", taskId],
         queryFn: async (): Promise<TaskComment[]> => {
             if (!taskId) return [];
-            const { data, error } = await supabase
-                .from("task_comments")
-                .select("*, profile:profiles(display_name, avatar_url)")
-                .eq("task_id", taskId)
-                .order("created_at", { ascending: true });
-            if (error) throw error;
-            return (data ?? []) as TaskComment[];
+            return commentService.getCommentsByTask(taskId);
         },
         enabled: !!taskId,
     });
@@ -54,17 +49,9 @@ export function useTaskComments(taskId: string | undefined) {
             category: CommentCategory;
         }) => {
             if (!taskId) return;
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
+            const { data: { user } } = await authService.getUser();
             if (!user) throw new Error("Not authenticated");
-            const { error } = await supabase.from("task_comments").insert({
-                task_id: taskId,
-                user_id: user.id,
-                content,
-                category,
-            });
-            if (error) throw error;
+            await commentService.addComment(taskId, user.id, content, category);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["task_comments", taskId] });
@@ -73,11 +60,7 @@ export function useTaskComments(taskId: string | undefined) {
 
     const deleteComment = useMutation({
         mutationFn: async (commentId: string) => {
-            const { error } = await supabase
-                .from("task_comments")
-                .delete()
-                .eq("id", commentId);
-            if (error) throw error;
+            await commentService.deleteComment(commentId);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["task_comments", taskId] });
@@ -94,11 +77,7 @@ export function useTaskComments(taskId: string | undefined) {
             content: string;
             category: CommentCategory;
         }) => {
-            const { error } = await supabase
-                .from("task_comments")
-                .update({ content, category })
-                .eq("id", id);
-            if (error) throw error;
+            await commentService.editComment(id, content, category);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["task_comments", taskId] });

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { taskService } from "@/services/taskService";
+import { adminService } from "@/services/adminService";
 import { useAuth } from "./useAuth";
 
 interface AssigneeProfile {
@@ -51,59 +52,17 @@ export function useTasks(boardId: string | undefined) {
     queryKey: ["tasks", boardId],
     queryFn: async () => {
       if (!boardId) return [];
-      const { data: columns } = await supabase
-        .from("columns")
-        .select("id")
-        .eq("board_id", boardId);
-      if (!columns?.length) return [];
-
-      const columnIds = columns.map((c) => c.id);
-      const { data, error } = await supabase
-        .from("tasks")
-        .select(`
-          *,
-          task_labels (
-            label_id,
-            labels (*)
-          ),
-          task_attachments (count),
-          assignee_profile:profiles!tasks_assigned_to_fkey (
-            display_name,
-            avatar_url
-          )
-        `)
-        .in("column_id", columnIds)
-        .order("order_index");
-      if (error) throw error;
-      return data as unknown as TaskRecord[];
+      return taskService.getTasksByBoard(boardId);
     },
     enabled: !!boardId && !!user,
   });
 
   const createTask = useMutation({
     mutationFn: async (input: CreateTaskInput) => {
-      const { data: existing } = await supabase
-        .from("tasks")
-        .select("order_index")
-        .eq("column_id", input.column_id)
-        .order("order_index", { ascending: false })
-        .limit(1);
-      const nextOrder = (existing?.[0]?.order_index ?? -1) + 1;
-
-      const { error } = await supabase.from("tasks").insert({
-        ...input,
-        order_index: nextOrder,
-      });
-      if (error) throw error;
-
-      // Log activity
+      const nextOrder = await taskService.getNextOrderIndex(input.column_id);
+      await taskService.createTask({ ...input, order_index: nextOrder });
       if (user) {
-        await supabase.from("activity_logs").insert({
-          user_id: user.id,
-          action: "created",
-          entity_type: "task",
-          metadata: { title: input.title },
-        });
+        await adminService.logActivity(user.id, "created", "task", undefined, { title: input.title });
       }
     },
     onSuccess: () => {
@@ -113,17 +72,9 @@ export function useTasks(boardId: string | undefined) {
 
   const updateTask = useMutation({
     mutationFn: async ({ id, ...updates }: { id: string } & Partial<CreateTaskInput>) => {
-      const { error } = await supabase.from("tasks").update(updates).eq("id", id);
-      if (error) throw error;
-
+      await taskService.updateTask(id, updates as Record<string, unknown>);
       if (user) {
-        await supabase.from("activity_logs").insert({
-          user_id: user.id,
-          action: "updated",
-          entity_type: "task",
-          entity_id: id,
-          metadata: updates,
-        });
+        await adminService.logActivity(user.id, "updated", "task", id, updates as Record<string, unknown>);
       }
     },
     onSuccess: () => {
@@ -133,16 +84,9 @@ export function useTasks(boardId: string | undefined) {
 
   const deleteTask = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("tasks").delete().eq("id", id);
-      if (error) throw error;
-
+      await taskService.deleteTask(id);
       if (user) {
-        await supabase.from("activity_logs").insert({
-          user_id: user.id,
-          action: "deleted",
-          entity_type: "task",
-          entity_id: id,
-        });
+        await adminService.logActivity(user.id, "deleted", "task", id);
       }
     },
     onSuccess: () => {
@@ -152,11 +96,7 @@ export function useTasks(boardId: string | undefined) {
 
   const moveTask = useMutation({
     mutationFn: async ({ taskId, newColumnId, newOrderIndex }: MoveTaskInput) => {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ column_id: newColumnId, order_index: newOrderIndex })
-        .eq("id", taskId);
-      if (error) throw error;
+      await taskService.moveTask(taskId, newColumnId, newOrderIndex);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
@@ -165,23 +105,9 @@ export function useTasks(boardId: string | undefined) {
 
   const markDone = useMutation({
     mutationFn: async ({ taskId, targetColumnId, targetOrderIndex }: MarkDoneInput) => {
-      const { error } = await supabase
-        .from("tasks")
-        .update({
-          is_done: true,
-          column_id: targetColumnId,
-          order_index: targetOrderIndex,
-        })
-        .eq("id", taskId);
-      if (error) throw error;
-
+      await taskService.markTaskDone(taskId, targetColumnId, targetOrderIndex);
       if (user) {
-        await supabase.from("activity_logs").insert({
-          user_id: user.id,
-          action: "marked_done",
-          entity_type: "task",
-          entity_id: taskId,
-        });
+        await adminService.logActivity(user.id, "marked_done", "task", taskId);
       }
     },
     onSuccess: () => {
@@ -191,11 +117,7 @@ export function useTasks(boardId: string | undefined) {
 
   const markUndone = useMutation({
     mutationFn: async (taskId: string) => {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ is_done: false })
-        .eq("id", taskId);
-      if (error) throw error;
+      await taskService.markTaskUndone(taskId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });

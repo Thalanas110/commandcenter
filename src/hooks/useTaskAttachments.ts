@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { attachmentService } from "@/services/attachmentService";
 
 export interface TaskAttachment {
     id: string;
@@ -18,38 +18,14 @@ export function useTaskAttachments(taskId: string) {
     const attachmentsQuery = useQuery({
         queryKey: ["attachments", taskId],
         queryFn: async () => {
-            const { data, error } = await supabase
-                .from("task_attachments")
-                .select("*")
-                .eq("task_id", taskId)
-                .order("created_at", { ascending: false });
-            if (error) throw error;
-            return data as TaskAttachment[];
+            return attachmentService.getAttachmentsByTask(taskId);
         },
         enabled: !!taskId,
     });
 
     const uploadAttachment = useMutation({
         mutationFn: async (file: File) => {
-            const ext = file.name.split(".").pop();
-            const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
-            const filePath = `${taskId}/${fileName}`;
-
-            // 1. Upload to Storage
-            const { error: uploadError } = await supabase.storage
-                .from("task-attachments")
-                .upload(filePath, file);
-            if (uploadError) throw uploadError;
-
-            // 2. Insert into DB
-            const { error: dbError } = await supabase.from("task_attachments").insert({
-                task_id: taskId,
-                file_path: filePath,
-                file_name: file.name,
-                file_type: file.type,
-                file_size: file.size,
-            });
-            if (dbError) throw dbError;
+            await attachmentService.uploadAttachment(taskId, file);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["attachments", taskId] });
@@ -60,18 +36,7 @@ export function useTaskAttachments(taskId: string) {
 
     const deleteAttachment = useMutation({
         mutationFn: async (attachment: TaskAttachment) => {
-            // 1. Delete from Storage
-            const { error: storageError } = await supabase.storage
-                .from("task-attachments")
-                .remove([attachment.file_path]);
-            if (storageError) throw storageError;
-
-            // 2. Delete from DB
-            const { error: dbError } = await supabase
-                .from("task_attachments")
-                .delete()
-                .eq("id", attachment.id);
-            if (dbError) throw dbError;
+            await attachmentService.deleteAttachment(attachment);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["attachments", taskId] });
