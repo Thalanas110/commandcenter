@@ -73,7 +73,12 @@ export const taskService = {
   async markTaskDone(taskId: string, targetColumnId: string, targetOrderIndex: number) {
     const { error } = await supabase
       .from("tasks")
-      .update({ is_done: true, column_id: targetColumnId, order_index: targetOrderIndex })
+      .update({
+        is_done: true,
+        done_at: new Date().toISOString(),
+        column_id: targetColumnId,
+        order_index: targetOrderIndex,
+      })
       .eq("id", taskId);
     if (error) throw error;
   },
@@ -81,7 +86,7 @@ export const taskService = {
   async markTaskUndone(taskId: string) {
     const { error } = await supabase
       .from("tasks")
-      .update({ is_done: false })
+      .update({ is_done: false, done_at: null })
       .eq("id", taskId);
     if (error) throw error;
   },

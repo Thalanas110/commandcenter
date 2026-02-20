@@ -20,6 +20,7 @@ import { useColumns } from "@/hooks/useColumns";
 import { useTasks } from "@/hooks/useTasks";
 import { useCategories } from "@/hooks/useCategories";
 import { useAutoMoveCards } from "@/hooks/useAutoMoveCards";
+import { useAutoDeleteDoneTasks } from "@/hooks/useAutoDeleteDoneTasks";
 import { useRealtimeBoard } from "@/hooks/useRealtime";
 import { AppHeader } from "@/components/AppHeader";
 import { KanbanColumn } from "@/components/KanbanColumn";
@@ -133,6 +134,9 @@ export default function BoardViewPage() {
 
   // Auto-move overdue → On Hold, done → Done
   useAutoMoveCards(tasks, columns, tasks, moveTask, colLoading || taskLoading);
+
+  // Auto-delete done cards that have exceeded the category's configured threshold
+  useAutoDeleteDoneTasks(tasks, columns, categories, deleteTask, colLoading || taskLoading);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<"column" | "task" | null>(null);
@@ -693,6 +697,7 @@ export default function BoardViewPage() {
           createCategory.mutate({ name, color })
         }
         onDeleteCategory={(id) => deleteCategory.mutate(id)}
+        onUpdateCategory={(id, fields) => updateCategory.mutate({ id, ...fields })}
       />
     </div>
   );

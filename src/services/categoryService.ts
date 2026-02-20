@@ -61,7 +61,7 @@ export const categoryService = {
 
   async updateCategory(
     id: string,
-    fields: Partial<{ name: string; color: string }>
+    fields: Partial<{ name: string; color: string; auto_delete_after_weeks: number | null }>
   ) {
     const { error } = await supabase
       .from("categories")

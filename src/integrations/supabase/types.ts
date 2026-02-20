@@ -44,6 +44,47 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          auto_delete_after_weeks: number | null
+          board_id: string
+          color: string
+          created_at: string
+          id: string
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          auto_delete_after_weeks?: number | null
+          board_id: string
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_delete_after_weeks?: number | null
+          board_id?: string
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       board_shares: {
         Row: {
           board_id: string
@@ -138,6 +179,8 @@ export type Database = {
       columns: {
         Row: {
           board_id: string
+          category_id: string | null
+          cover_image_url: string | null
           created_at: string
           id: string
           name: string
@@ -146,6 +189,8 @@ export type Database = {
         }
         Insert: {
           board_id: string
+          category_id?: string | null
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           name: string
@@ -154,6 +199,8 @@ export type Database = {
         }
         Update: {
           board_id?: string
+          category_id?: string | null
+          cover_image_url?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -166,6 +213,13 @@ export type Database = {
             columns: ["board_id"]
             isOneToOne: false
             referencedRelation: "boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "columns_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -285,35 +339,50 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assigned_to: string | null
           column_id: string
+          cover_image_url: string | null
           created_at: string
           description: string | null
+          done_at: string | null
           due_date: string | null
           id: string
+          is_done: boolean | null
           order_index: number
           priority: Database["public"]["Enums"]["task_priority"]
+          start_date: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           column_id: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          done_at?: string | null
           due_date?: string | null
           id?: string
+          is_done?: boolean | null
           order_index?: number
           priority?: Database["public"]["Enums"]["task_priority"]
+          start_date?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           column_id?: string
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          done_at?: string | null
           due_date?: string | null
           id?: string
+          is_done?: boolean | null
           order_index?: number
           priority?: Database["public"]["Enums"]["task_priority"]
+          start_date?: string | null
           title?: string
           updated_at?: string
         }

@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2 } from "lucide-react";
+import { Trash2, Clock } from "lucide-react";
 import type { Category } from "@/hooks/useCategories";
 
 const PRESET_COLORS = [
@@ -32,6 +32,7 @@ interface CategoryManagerDialogProps {
     categories: Category[];
     onCreateCategory: (name: string, color: string) => void;
     onDeleteCategory: (id: string) => void;
+    onUpdateCategory: (id: string, fields: Partial<{ name: string; color: string; auto_delete_after_weeks: number | null }>) => void;
 }
 
 export function CategoryManagerDialog({
@@ -40,6 +41,7 @@ export function CategoryManagerDialog({
     categories,
     onCreateCategory,
     onDeleteCategory,
+    onUpdateCategory,
 }: CategoryManagerDialogProps) {
     const [name, setName] = useState("");
     const [color, setColor] = useState(PRESET_COLORS[0]);
@@ -99,28 +101,14 @@ export function CategoryManagerDialog({
                 {categories.length > 0 && (
                     <div className="mt-4 space-y-2">
                         <Label>Existing Categories</Label>
-                        <div className="max-h-48 space-y-1.5 overflow-y-auto">
+                        <div className="max-h-64 space-y-2 overflow-y-auto">
                             {categories.map((cat) => (
-                                <div
+                                <CategoryRow
                                     key={cat.id}
-                                    className="flex items-center gap-2 rounded-md border px-3 py-2"
-                                >
-                                    <div
-                                        className="h-4 w-4 shrink-0 rounded-full"
-                                        style={{ backgroundColor: cat.color }}
-                                    />
-                                    <span className="flex-1 truncate text-sm font-medium">
-                                        {cat.name}
-                                    </span>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-7 w-7 text-destructive hover:text-destructive"
-                                        onClick={() => onDeleteCategory(cat.id)}
-                                    >
-                                        <Trash2 className="h-3.5 w-3.5" />
-                                    </Button>
-                                </div>
+                                    category={cat}
+                                    onDelete={() => onDeleteCategory(cat.id)}
+                                    onUpdate={(fields) => onUpdateCategory(cat.id, fields)}
+                                />
                             ))}
                         </div>
                     </div>
@@ -135,3 +123,84 @@ export function CategoryManagerDialog({
         </Dialog>
     );
 }
+
+// ─── Per-category row with inline auto-delete setting ────────────────────────
+
+interface CategoryRowProps {
+    category: Category;
+    onDelete: () => void;
+    onUpdate: (fields: Partial<{ name: string; color: string; auto_delete_after_weeks: number | null }>) => void;
+}
+
+function CategoryRow({ category, onDelete, onUpdate }: CategoryRowProps) {
+    const [weeksInput, setWeeksInput] = useState(
+        category.auto_delete_after_weeks != null
+            ? String(category.auto_delete_after_weeks)
+            : ""
+    );
+    const [uncommitted, setUncommitted] = useState(false);
+
+    const handleWeeksBlur = () => {
+        if (!uncommitted) return;
+        const parsed = parseInt(weeksInput, 10);
+        const newVal = !isNaN(parsed) && parsed > 0 ? parsed : null;
+        onUpdate({ auto_delete_after_weeks: newVal });
+        // Normalise input display
+        setWeeksInput(newVal != null ? String(newVal) : "");
+        setUncommitted(false);
+    };
+
+    const handleWeeksKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            (e.target as HTMLInputElement).blur();
+        }
+    };
+
+    return (
+        <div className="space-y-1.5 rounded-md border px-3 py-2">
+            {/* Name + color dot + delete */}
+            <div className="flex items-center gap-2">
+                <div
+                    className="h-4 w-4 shrink-0 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                />
+                <span className="flex-1 truncate text-sm font-medium">
+                    {category.name}
+                </span>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    onClick={onDelete}
+                >
+                    <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+            </div>
+
+            {/* Auto-delete setting */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                <span className="shrink-0">Auto-delete Done cards after</span>
+                <Input
+                    type="number"
+                    min={1}
+                    className="h-6 w-16 px-1.5 text-xs"
+                    placeholder="—"
+                    value={weeksInput}
+                    onChange={(e) => {
+                        setWeeksInput(e.target.value);
+                        setUncommitted(true);
+                    }}
+                    onBlur={handleWeeksBlur}
+                    onKeyDown={handleWeeksKeyDown}
+                />
+                <span className="shrink-0">
+                    {weeksInput && !isNaN(parseInt(weeksInput)) && parseInt(weeksInput) > 0
+                        ? parseInt(weeksInput) === 1 ? "week" : "weeks"
+                        : "(off)"}
+                </span>
+            </div>
+        </div>
+    );
+}
+

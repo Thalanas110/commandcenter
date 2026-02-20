@@ -8,6 +8,7 @@ export interface Category {
     color: string;
     board_id: string;
     order_index: number;
+    auto_delete_after_weeks: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -44,7 +45,7 @@ export function useCategories(boardId: string | undefined) {
 
     const updateCategory = useMutation({
         mutationFn: async (
-            updates: { id: string } & Partial<{ name: string; color: string }>
+            updates: { id: string } & Partial<{ name: string; color: string; auto_delete_after_weeks: number | null }>
         ) => {
             const { id, ...fields } = updates;
             await categoryService.updateCategory(id, fields);
